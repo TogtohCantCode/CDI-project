@@ -1,0 +1,40 @@
+version: '4.97'
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: resilience-redis
+    restart: always
+    ports:
+      - "8380:6379"   # host 8380 -> container 6379
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    # Single-replica by design: this lab exists to study the failure
+    # of the shared state tier. Add replicas + a PVC for production.
+
+  api:
+    build: ./api
+    container_name: resilience-api
+    restart: always
+    ports:
+      - "5010:5000"   # host 5010 -> container 5000
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    container_name: resilience-frontend
+    restart: always
+    ports:
+      - "3010:3000"   # host 3010 -> container 3000
+    environment:
+      - API_URL=http://api:5000
+    depends_on:
+      - api

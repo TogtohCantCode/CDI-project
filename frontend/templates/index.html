@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resilience Lab Control Center</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { background-color: #0b0f19; color: #e2e8f0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .card { background: #161e2e; border: 1px solid #ffffff33; border-radius: 12px; }
+        .badge-status { font-size: 0.9rem; padding: 0.4em 0.8em; }
+        .glow-green { box-shadow: 0 0 15px rgba(16, 185, 129, 0.3); }
+        .glow-red { box-shadow: 0 0 15px rgba(239, 68, 68, 0.3); }
+        .console-box { background: #070a11; font-family: 'Courier New', monospace; font-size: 0.85rem; height: 180px; overflow-y: auto; border: 1px solid #ffffff11; }
+        .btn-danger-custom { background: #dc2626; border: none; }
+        .btn-danger-custom:hover { background: #b91c1c; }
+        .metric-value { font-size: 1.5rem; font-weight: bold; }
+        .chart-container { position: relative; height: 200px; width: 100%; }
+    </style>
+</head>
+<body class="py-4">
+    <div class="container">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="fw-bold text-white mb-0">Resilience Lab</h1>
+                <p class="text-secondary small">Chaos Engineering & High-Availability Testbed</p>
+            </div>
+            <span id="system-status-badge" class="badge bg-success badge-status glow-green">SYSTEM HEALTHY</span>
+        </div>
+
+        <div class="row g-4">
+            <!-- Metrics Tiles -->
+            <div class="col-md-3">
+                <div class="card p-3 h-100">
+                    <div class="text-secondary small text-uppercase fw-bold mb-1">Requests</div>
+                    <div id="metric-requests" class="metric-value text-warning">0</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card p-3 h-100">
+                    <div class="text-secondary small text-uppercase fw-bold mb-1">Latency</div>
+                    <div id="metric-latency" class="metric-value text-primary">0 ms</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card p-3 h-100">
+                    <div class="text-secondary small text-uppercase fw-bold mb-1">CPU Load</div>
+                    <div id="metric-cpu" class="metric-value text-info">0%</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card p-3 h-100">
+                    <div class="text-secondary small text-uppercase fw-bold mb-1">CPU Spike</div>
+                    <div id="metric-cpu-spike" class="metric-value text-warning">OFF</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card p-3 h-100">
+                    <div class="text-secondary small text-uppercase fw-bold mb-1">Host</div>
+                    <div id="metric-host" class="small text-truncate text-secondary">Unknown</div>
+                </div>
+            </div>
+
+            <!-- CPU Usage Graph -->
+            <div class="col-md-8">
+                <div class="card p-4">
+                    <h5 class="card-title text-white mb-3">Live Performance Metrics</h5>
+                    <div class="chart-container">
+                        <canvas id="performanceChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chaos Control Panel -->
+            <div class="col-md-4">
+                <div class="card p-4 h-100">
+                    <h5 class="card-title text-danger mb-3">Chaos Injection</h5>
+                    <div class="mb-3">
+                        <label class="form-label text-white small">Artificial Latency:</label>
+                        <input type="range" class="form-range" id="chaos-latency" min="0" max="5" step="0.5" value="0" onchange="document.getElementById('lat-val').innerText = this.value + 's'">
+                        <span id="lat-val" class="small text-secondary">0s</span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-white small">Error Rate (%):</label>
+                        <input type="range" class="form-range" id="chaos-error" min="0" max="100" step="10" value="0" onchange="document.getElementById('err-val').innerText = this.value + '%'">
+                        <span id="err-val" class="small text-secondary">0%</span>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-warning" onclick="applyChaos(false)">Apply Faults</button>
+                        <button class="btn btn-danger-custom" onclick="applyChaos(true)">💥 Trigger CPU Spike</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live Logs Console -->
+            <div class="col-12">
+                <div class="card p-4">
+                    <h5 class="card-title text-white mb-2">🖥️ Activity Log</h5>
+                    <div id="console-log" class="console-box p-3 rounded text-success">System initialized. Waiting for events...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const ctx = document.getElementById('performanceChart').getContext('2d');
+        const MAX_DATA_POINTS = 30;
+
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: Array(MAX_DATA_POINTS).fill(''),
+                datasets: [
+                    {
+                        label: 'CPU Usage (%)',
+                        data: Array(MAX_DATA_POINTS).fill(0),
+                        borderColor: '#0dcaf0',
+                        backgroundColor: 'rgba(13, 202, 240, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 2,
+                        pointRadius: 0
+                    },
+                    {
+                        label: 'Latency (ms)',
+                        data: Array(MAX_DATA_POINTS).fill(0),
+                        borderColor: '#0d6efd',
+                        backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        yAxisID: 'y1'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { intersect: false, mode: 'index' },
+                plugins: { legend: { display: true, labels: { color: '#94a3b8' } } },
+                scales: {
+                    x: { display: false },
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: { color: '#64748b' },
+                        grid: { color: 'rgba(255,255,255,0.05)' },
+                        title: { display: true, text: 'CPU %', color: '#64748b' }
+                    },
+                    y1: {
+                        beginAtZero: true,
+                        position: 'right',
+                        ticks: { color: '#64748b' },
+                        grid: { display: false },
+                        title: { display: true, text: 'Latency (ms)', color: '#64748b' }
+                    }
+                }
+            }
+        });
+
+        function log(msg, type = 'info') {
+            const consoleBox = document.getElementById('console-log');
+            const time = new Date().toLocaleTimeString();
+            const color = type === 'error' ? '#ef4444' : type === 'warn' ? '#f59e0b' : '#10b981';
+            consoleBox.innerHTML = `<div><span style="color:#64748b">[${time}]</span> <span style="color:${color}">${msg}</span></div>` + consoleBox.innerHTML;
+            consoleBox.scrollTop = 0;
+        }
+
+        async function fetchTelemetry() {
+            try {
+                const res = await fetch('/proxy/stats');
+                const data = await res.json();
+
+                if (res.ok) {
+                    document.getElementById('metric-requests').innerText = data.total_requests;
+                    document.getElementById('metric-latency').innerText = data.response_time_ms + ' ms';
+                    document.getElementById('metric-cpu').innerText = data.cpu_usage_pct + '%';
+                    console.log('CPU Usage:', data.cpu_usage_pct);
+                    document.getElementById('metric-cpu-spike').innerText = data.cpu_spike ? 'ACTIVE' : 'OFF';
+                    document.getElementById('metric-host').innerText = data.hostname;
+
+                    const isDegraded = data.cpu_usage_pct > 80 || data.response_time_ms > 2000;
+                    document.getElementById('system-status-badge').className = isDegraded
+                        ? "badge bg-warning badge-status"
+                        : "badge bg-success badge-status glow-green";
+                    document.getElementById('system-status-badge').innerText = isDegraded ? "SYSTEM DEGRADED" : "SYSTEM HEALTHY";
+
+                    // Update Chart
+                    chart.data.datasets[0].data.push(data.cpu_usage_pct);
+                    chart.data.datasets[0].data.shift();
+                    chart.data.datasets[1].data.push(data.response_time_ms);
+                    chart.data.datasets[1].data.shift();
+                    chart.update('none');
+
+                    if (data.response_time_ms > 500) {
+                        log(`HTTP 200 - Slow response: ${data.response_time_ms}ms`, 'warn');
+                    }
+                } else {
+                    document.getElementById('system-status-badge').className = "badge bg-danger badge-status glow-red";
+                    document.getElementById('system-status-badge').innerText = "FAILURE";
+                    log(`HTTP ${res.status} - ${data.error || 'Request failed'}`, 'error');
+                }
+            } catch (err) {
+                document.getElementById('system-status-badge').className = "badge bg-danger badge-status glow-red";
+                document.getElementById('system-status-badge').innerText = "UNREACHABLE";
+                log(`Network Connection Error: ${err}`, 'error');
+            }
+        }
+
+        async function applyChaos(cpuSpike = false) {
+            const latency = document.getElementById('chaos-latency').value;
+            const errorRate = document.getElementById('chaos-error').value;
+            log(`Injecting Chaos: Latency=${latency}s, Error=${errorRate}%, Spike=${cpuSpike}`, 'warn');
+
+            try {
+                const res = await fetch('/proxy/chaos', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ latency, error_rate: errorRate, cpu_spike: cpuSpike })
+                });
+                const data = await res.json();
+                log(`Chaos Engine Updated`, 'warn');
+            } catch(e) {
+                log(`Chaos Update Failed: ${e}`, 'error');
+            }
+        }
+
+        setInterval(fetchTelemetry, 2000);
+    </script>
+</body>
+</html>

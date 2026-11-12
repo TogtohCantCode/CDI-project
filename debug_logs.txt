@@ -1,0 +1,14 @@
+# Debugging CPU Usage Issue
+
+# Check if CPU usage is being calculated correctly in the API
+# Check if the proxy is passing through the CPU usage field
+
+# Verify the API response structure:
+# curl -s http://localhost:5010/api/stats | python3 -c "import sys,json; d=json.load(sys.stdin); print('CPU:', d.get('cpu_usage_pct'))"
+
+# Verify the proxy response structure:
+# curl -s http://localhost:3010/proxy/stats | python3 -c "import sys,json; d=json.load(sys.stdin); print('CPU:', d.get('cpu_usage_pct'))"
+
+# Check the frontend template to ensure it's expecting the field
+
+# Check the frontend JavaScript to ensure it's parsing the field correctly
