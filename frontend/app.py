@@ -55,5 +55,29 @@ def proxy_chaos():
         return jsonify({"error": str(e)}), 502
 
 
+@app.route('/proxy/chaos/history', methods=['GET'])
+def proxy_history():
+    """Forward chaos experiment history requests to the backend API."""
+    try:
+        res = requests.get(f"{API_URL}/api/chaos/history", timeout=API_TIMEOUT)
+        return jsonify(res.json()), res.status_code
+    except requests.exceptions.Timeout:
+        return jsonify({"history": []}), 504
+    except requests.exceptions.RequestException as e:
+        return jsonify({"history": [], "error": str(e)}), 502
+
+
+@app.route('/proxy/chaos/reset', methods=['POST'])
+def proxy_reset():
+    """Forward chaos reset requests to the backend API."""
+    try:
+        res = requests.post(f"{API_URL}/api/chaos/reset", timeout=API_TIMEOUT)
+        return jsonify(res.json()), res.status_code
+    except requests.exceptions.Timeout:
+        return jsonify({"error": "Backend reset endpoint timed out"}), 504
+    except requests.exceptions.RequestException as e:
+        return jsonify({"error": str(e)}), 502
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=3000, threaded=True)

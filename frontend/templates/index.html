@@ -52,6 +52,12 @@
             </div>
             <div class="col-md-3">
                 <div class="card p-3 h-100">
+                    <div class="text-secondary small text-uppercase fw-bold mb-1">RAM Usage</div>
+                    <div id="metric-ram" class="metric-value text-info">0%</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card p-3 h-100">
                     <div class="text-secondary small text-uppercase fw-bold mb-1">CPU Spike</div>
                     <div id="metric-cpu-spike" class="metric-value text-warning">OFF</div>
                 </div>
@@ -92,6 +98,29 @@
                     <div class="d-grid gap-2">
                         <button class="btn btn-warning" onclick="applyChaos(false)">Apply Faults</button>
                         <button class="btn btn-danger-custom" onclick="applyChaos(true)">💥 Trigger CPU Spike</button>
+                        <button class="btn btn-outline-secondary" onclick="resetChaos()">↺ Reset All</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chaos History -->
+            <div class="col-md-12">
+                <div class="card p-4">
+                    <h5 class="card-title text-white mb-2">📜 Chaos Experiment History</h5>
+                    <div class="table-responsive" style="max-height: 200px;">
+                        <table class="table table-dark table-sm table-striped mb-0">
+                            <thead class="text-secondary small">
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Latency</th>
+                                    <th>Error Rate</th>
+                                    <th>CPU Spike</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-table-body">
+                                <tr><td colspan="4" class="text-secondary text-center">No experiments recorded yet.</td></tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -126,6 +155,16 @@
                         pointRadius: 0
                     },
                     {
+                        label: 'RAM Usage (%)',
+                        data: Array(MAX_DATA_POINTS).fill(0),
+                        borderColor: '#a855f7',
+                        backgroundColor: 'rgba(168, 85, 247, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 2,
+                        pointRadius: 0
+                    },
+                    {
                         label: 'Latency (ms)',
                         data: Array(MAX_DATA_POINTS).fill(0),
                         borderColor: '#0d6efd',
@@ -134,7 +173,7 @@
                         tension: 0.4,
                         borderWidth: 2,
                         pointRadius: 0,
-                        yAxisID: 'y1'
+                        yAxisID: 'y2'
                     }
                 ]
             },
@@ -153,6 +192,13 @@
                         title: { display: true, text: 'CPU %', color: '#64748b' }
                     },
                     y1: {
+                        beginAtZero: true,
+                        position: 'right',
+                        ticks: { color: '#a855f7' },
+                        grid: { display: false },
+                        title: { display: true, text: 'RAM %', color: '#a855f7' }
+                    },
+                    y2: {
                         beginAtZero: true,
                         position: 'right',
                         ticks: { color: '#64748b' },
@@ -180,6 +226,7 @@
                     document.getElementById('metric-requests').innerText = data.total_requests;
                     document.getElementById('metric-latency').innerText = data.response_time_ms + ' ms';
                     document.getElementById('metric-cpu').innerText = data.cpu_usage_pct + '%';
+                    document.getElementById('metric-ram').innerText = (data.memory_usage_pct || 0).toFixed(1) + '%';
                     console.log('CPU Usage:', data.cpu_usage_pct);
                     document.getElementById('metric-cpu-spike').innerText = data.cpu_spike ? 'ACTIVE' : 'OFF';
                     document.getElementById('metric-host').innerText = data.hostname;
@@ -193,8 +240,10 @@
                     // Update Chart
                     chart.data.datasets[0].data.push(data.cpu_usage_pct);
                     chart.data.datasets[0].data.shift();
-                    chart.data.datasets[1].data.push(data.response_time_ms);
+                    chart.data.datasets[1].data.push(data.memory_usage_pct || 0);
                     chart.data.datasets[1].data.shift();
+                    chart.data.datasets[2].data.push(data.response_time_ms);
+                    chart.data.datasets[2].data.shift();
                     chart.update('none');
 
                     if (data.response_time_ms > 500) {
@@ -209,6 +258,35 @@
                 document.getElementById('system-status-badge').className = "badge bg-danger badge-status glow-red";
                 document.getElementById('system-status-badge').innerText = "UNREACHABLE";
                 log(`Network Connection Error: ${err}`, 'error');
+            }
+
+            // Refresh chaos experiment history
+            await fetchHistory();
+        }
+
+        async function fetchHistory() {
+            try {
+                const res = await fetch('/proxy/chaos/history');
+                if (!res.ok) return;
+                const data = await res.json();
+                const tbody = document.getElementById('history-table-body');
+                const items = data.history || [];
+                if (items.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-secondary text-center">No experiments recorded yet.</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = items.map(h => {
+                    const ts = h.ts ? new Date(h.ts * 1000).toLocaleTimeString() : '—';
+                    const spike = h.cpu_spike ? '<span class="badge bg-danger">SPIKE</span>' : '—';
+                    return `<tr>
+                        <td class="text-secondary small">${ts}</td>
+                        <td>${h.latency_seconds || 0}s</td>
+                        <td>${h.error_rate_pct || 0}%</td>
+                        <td>${spike}</td>
+                    </tr>`;
+                }).join('');
+            } catch (err) {
+                console.warn('History fetch failed:', err);
             }
         }
 
@@ -227,6 +305,25 @@
                 log(`Chaos Engine Updated`, 'warn');
             } catch(e) {
                 log(`Chaos Update Failed: ${e}`, 'error');
+            }
+        }
+
+        async function resetChaos() {
+            log('Resetting all chaos state...', 'warn');
+            try {
+                const res = await fetch('/proxy/chaos/reset', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await res.json();
+                log('Chaos state reset to defaults', 'warn');
+                document.getElementById('chaos-latency').value = 0;
+                document.getElementById('lat-val').innerText = '0s';
+                document.getElementById('chaos-error').value = 0;
+                document.getElementById('err-val').innerText = '0%';
+                await fetchHistory();
+            } catch(e) {
+                log(`Reset Failed: ${e}`, 'error');
             }
         }
 

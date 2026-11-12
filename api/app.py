@@ -5,6 +5,8 @@ import random
 import logging
 import threading
 import redis
+import psutil
+import json
 from flask import Flask, jsonify, request
 
 app = Flask(__name__)
@@ -73,6 +75,45 @@ def get_chaos_state():
     return _load_chaos()
 
 
+# Chaos history: a rolling log of every experiment applied, stored in Redis
+# so it survives restarts and is shared across replicated pods.
+CHAOS_HISTORY_KEY = os.environ.get('CHAOS_HISTORY_KEY', 'resilience:chaos_history')
+CHAOS_HISTORY_MAX = int(os.environ.get('CHAOS_HISTORY_MAX', '50'))
+
+
+def _record_history(entry):
+    """Append a chaos-experiment record to the shared Redis history list."""
+    if r is None:
+        return
+    try:
+        r.lpush(CHAOS_HISTORY_KEY, json.dumps(entry))
+        r.ltrim(CHAOS_HISTORY_KEY, 0, CHAOS_HISTORY_MAX - 1)
+    except Exception as e:
+        logging.error(f"Failed to record chaos history: {e}")
+
+
+def get_chaos_history(limit=20):
+    """Return the most recent chaos experiments."""
+    if r is None:
+        return []
+    try:
+        raw = r.lrange(CHAOS_HISTORY_KEY, 0, max(0, limit - 1))
+        return [json.loads(x) for x in raw]
+    except Exception as e:
+        logging.error(f"Failed to read chaos history: {e}")
+        return []
+
+
+def reset_chaos():
+    """Clear the chaos state back to defaults (used by the Reset button)."""
+    _save_chaos(dict(_DEFAULT_CHAOS))
+    try:
+        if r is not None:
+            r.delete(CHAOS_HISTORY_KEY)
+    except Exception as e:
+        logging.error(f"Failed to clear chaos history: {e}")
+
+
 
 # CPU burn: runs in a background thread so the API stays responsive.
 # The dashboard's point is to observe the HPA scaling the pod up on CPU
@@ -111,6 +152,12 @@ def _get_cpu_usage_pct():
         # Fallback to simulated value if getloadavg fails
         return 3.5
 
+def _get_memory_usage_pct():
+    """Return memory utilization percentage."""
+    try:
+        return psutil.virtual_memory().percent
+    except Exception:
+        return 0.0
 
 def _trigger_cpu_spike(duration_seconds=5.0):
     with _cpu_spike_lock:
@@ -194,6 +241,7 @@ def get_stats():
         "chaos_config": get_chaos_state(),
         "hostname": os.uname().nodename,
         "cpu_usage_pct": _get_cpu_usage_pct(),
+        "memory_usage_pct": _get_memory_usage_pct(),
     })
 
 
@@ -217,11 +265,34 @@ def configure_chaos():
     if cpu_spike:
         burn_thread = _trigger_cpu_spike(duration_seconds=3.0)
 
+    # Record the experiment in the shared history log
+    _record_history({
+        "ts": time.time(),
+        "latency_seconds": latency,
+        "error_rate_pct": error_rate,
+        "cpu_spike": cpu_spike,
+        "source": "api",
+    })
+
     return jsonify({
         "message": "Chaos configuration updated!",
         "current_state": new_state,
         "cpu_spike": "started in background thread" if burn_thread else "off",
     })
+
+
+@app.route('/api/chaos/history', methods=['GET'])
+def chaos_history():
+    """Return the rolling log of chaos experiments."""
+    limit = request.args.get('limit', default=20, type=int)
+    return jsonify({"history": get_chaos_history(limit=limit)})
+
+
+@app.route('/api/chaos/reset', methods=['POST'])
+def chaos_reset():
+    """Reset chaos state to defaults and clear the experiment history."""
+    reset_chaos()
+    return jsonify({"message": "Chaos state reset to defaults", "current_state": dict(_DEFAULT_CHAOS)})
 
 
 if __name__ == '__main__':
