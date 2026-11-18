@@ -29,8 +29,10 @@ def proxy_stats():
         if res.status_code == 200:
             payload = res.json()
             payload["response_time_ms"] = elapsed_ms
+            app.logger.info(f"Proxy Success: /api/stats | {elapsed_ms}ms")
             return jsonify(payload), 200
         else:
+            app.logger.warning(f"Proxy Degraded: /api/stats | Status {res.status_code}")
             return jsonify({
                 "status": "degraded",
                 "error": f"API returned HTTP {res.status_code}",
@@ -38,8 +40,10 @@ def proxy_stats():
             }), res.status_code
 
     except requests.exceptions.Timeout:
+        app.logger.error("Proxy Timeout: /api/stats")
         return jsonify({"status": "down", "error": "API Request Timed Out (>4s)"}), 504
     except requests.exceptions.RequestException as e:
+        app.logger.error(f"Proxy Error: /api/stats | {str(e)}")
         return jsonify({"status": "down", "error": "Backend Service Unavailable", "details": str(e)}), 503
 
 

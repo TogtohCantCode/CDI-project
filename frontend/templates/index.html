@@ -7,132 +7,332 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { background-color: #0b0f19; color: #e2e8f0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .card { background: #161e2e; border: 1px solid #ffffff33; border-radius: 12px; }
-        .badge-status { font-size: 0.9rem; padding: 0.4em 0.8em; }
-        .glow-green { box-shadow: 0 0 15px rgba(16, 185, 129, 0.3); }
-        .glow-red { box-shadow: 0 0 15px rgba(239, 68, 68, 0.3); }
-        .console-box { background: #070a11; font-family: 'Courier New', monospace; font-size: 0.85rem; height: 180px; overflow-y: auto; border: 1px solid #ffffff11; }
-        .btn-danger-custom { background: #dc2626; border: none; }
-        .btn-danger-custom:hover { background: #b91c1c; }
-        .metric-value { font-size: 1.5rem; font-weight: bold; }
-        .chart-container { position: relative; height: 200px; width: 100%; }
+        :root {
+            --bg-canvas: #000000;
+            --card-bg: #7a7a7a;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --border-color: #ffffff;
+            --status-healthy-bg: #ecfdf5;
+            --status-healthy-border: #10b981;
+            --status-healthy-text: #065f46;
+        }
+
+        body {
+            background-color: var(--bg-canvas);
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            transition: background-color 0.4s ease;
+        }
+
+        /* Prominent Health Banner that tints whole page header */
+        .status-banner {
+            border-radius: 14px;
+            padding: 1.25rem 1.75rem;
+            margin-bottom: 1.75rem;
+            border: 4px solid var(--status-healthy-border);
+            background-color: var(--status-healthy-bg);
+            color: var(--status-healthy-text);
+            transition: all 0.4s ease;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        .status-banner.status-degraded {
+            background-color: #fef3c7;
+            border-color: #f59e0b;
+            color: #92400e;
+            animation: pulse-degraded 2s infinite;
+        }
+
+        .status-banner.status-failed {
+            background-color: #fee2e2;
+            border-color: #ef4444;
+            color: #991b1b;
+            animation: pulse-failed 1.5s infinite;
+        }
+
+        @keyframes pulse-degraded {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
+            50% { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
+        }
+
+        @keyframes pulse-failed {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
+            50% { box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); }
+        }
+
+        .status-pill {
+            font-size: 0.95rem;
+            font-weight: 700;
+            padding: 0.5rem 1.25rem;
+            border-radius: 50rem;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .card-custom {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .card-custom:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+        }
+
+        .metric-title {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+        }
+
+        .metric-value-lg {
+            font-size: 1.85rem;
+            font-weight: 800;
+            line-height: 1.2;
+            color: var(--text-primary);
+        }
+
+        .metric-subtext {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .console-box {
+            background: #0f172a;
+            color: #38bdf8;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 0.825rem;
+            height: 220px;
+            overflow-y: auto;
+            border-radius: 8px;
+            line-height: 1.5;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 240px;
+            width: 100%;
+        }
+
+        .badge-soft-primary { background: #e0f2fe; color: #0369a1; }
+        .badge-soft-success { background: #dcfce7; color: #15803d; }
+        .badge-soft-warning { background: #fef3c7; color: #b45309; }
+        .badge-soft-danger  { background: #fee2e2; color: #b91c1c; }
+
+        .form-range::-webkit-slider-thumb { background: #2563eb; }
+        .btn-chaos-apply { background-color: #2563eb; color: #fff; font-weight: 600; }
+        .btn-chaos-apply:hover { background-color: #1d4ed8; color: #fff; }
+        .btn-chaos-spike { background-color: #dc2626; color: #fff; font-weight: 600; }
+        .btn-chaos-spike:hover { background-color: #b91c1c; color: #fff; }
     </style>
 </head>
 <body class="py-4">
-    <div class="container">
-        <!-- Header -->
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <div>
-                <h1 class="fw-bold text-white mb-0">Resilience Lab</h1>
-                <p class="text-secondary small">Chaos Engineering & High-Availability Testbed</p>
+    <div class="container-fluid px-4" style="max-width: 1400px;">
+
+        <!-- PROMINENT SYSTEM HEALTH BANNER -->
+        <div id="system-status-banner" class="status-banner d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-3">
+                <div id="status-icon" style="font-size: 2rem;">✅</div>
+                <div>
+                    <h2 id="status-title" class="fw-bold mb-0 h4">System Status: Operational</h2>
+                    <p id="status-desc" class="mb-0 small opacity-75">All resilience thresholds within normal baseline parameters.</p>
+                </div>
             </div>
-            <span id="system-status-badge" class="badge bg-success badge-status glow-green">SYSTEM HEALTHY</span>
+            <div class="d-flex align-items-center gap-3">
+                <span id="status-badge" class="status-pill bg-success text-white">HEALTHY</span>
+            </div>
         </div>
 
-        <div class="row g-4">
-            <!-- Metrics Tiles -->
-            <div class="col-md-3">
-                <div class="card p-3 h-100">
-                    <div class="text-secondary small text-uppercase fw-bold mb-1">Requests</div>
-                    <div id="metric-requests" class="metric-value text-warning">0</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card p-3 h-100">
-                    <div class="text-secondary small text-uppercase fw-bold mb-1">Latency</div>
-                    <div id="metric-latency" class="metric-value text-primary">0 ms</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card p-3 h-100">
-                    <div class="text-secondary small text-uppercase fw-bold mb-1">CPU Load</div>
-                    <div id="metric-cpu" class="metric-value text-info">0%</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card p-3 h-100">
-                    <div class="text-secondary small text-uppercase fw-bold mb-1">RAM Usage</div>
-                    <div id="metric-ram" class="metric-value text-info">0%</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card p-3 h-100">
-                    <div class="text-secondary small text-uppercase fw-bold mb-1">CPU Spike</div>
-                    <div id="metric-cpu-spike" class="metric-value text-warning">OFF</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card p-3 h-100">
-                    <div class="text-secondary small text-uppercase fw-bold mb-1">Host</div>
-                    <div id="metric-host" class="small text-truncate text-secondary">Unknown</div>
+        <!-- TOP METRICS ROW (EASY TO UNDERSTAND REQUESTS & TELEMETRY) -->
+        <div class="row g-3 mb-4">
+
+            <!-- 1. EASY TO UNDERSTAND REQUESTS METRIC -->
+            <div class="col-xl-3 col-md-6">
+                <div class="card-custom p-3 h-100 d-flex flex-column justify-content-between">
+                    <div>
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="metric-title">Traffic Volume & Rate</span>
+                            <span class="badge badge-soft-primary">Live</span>
+                        </div>
+                        <div class="d-flex align-items-baseline gap-2">
+                            <div id="metric-requests-total" class="metric-value-lg">0</div>
+                            <span class="metric-subtext">total requests</span>
+                        </div>
+                    </div>
+                    <div class="pt-2 border-top mt-2 d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="text-secondary small">Current Throughput:</span>
+                            <span id="metric-requests-rate" class="fw-bold text-primary ms-1">0.0 req/s</span>
+                        </div>
+                        <div style="width: 70px; height: 24px;">
+                            <canvas id="reqSparkline"></canvas>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- CPU Usage Graph -->
-            <div class="col-md-8">
-                <div class="card p-4">
-                    <h5 class="card-title text-white mb-3">Live Performance Metrics</h5>
-                    <div class="chart-container">
+            <!-- 2. LATENCY -->
+            <div class="col-xl-3 col-md-6">
+                <div class="card-custom p-3 h-100 d-flex flex-column justify-content-between">
+                    <div>
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="metric-title">Response Latency</span>
+                            <span id="latency-status-tag" class="badge badge-soft-success">Normal</span>
+                        </div>
+                        <div id="metric-latency" class="metric-value-lg text-primary">0 ms</div>
+                    </div>
+                    <div class="pt-2 border-top mt-2 d-flex justify-content-between align-items-center">
+                        <span class="metric-subtext">Target Threshold: &lt; 500 ms</span>
+                        <span id="latency-trend" class="small fw-semibold text-success">✓ Optimal</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. CPU LOAD -->
+            <div class="col-xl-3 col-md-6">
+                <div class="card-custom p-3 h-100 d-flex flex-column justify-content-between">
+                    <div>
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="metric-title">Backend CPU Load</span>
+                            <span id="cpu-spike-tag" class="badge badge-soft-primary">Normal</span>
+                        </div>
+                        <div id="metric-cpu" class="metric-value-lg">0%</div>
+                    </div>
+                    <div class="pt-2 border-top mt-2 d-flex justify-content-between align-items-center">
+                        <span class="metric-subtext">Spike Engine:</span>
+                        <span id="metric-cpu-spike" class="fw-bold text-secondary">INACTIVE</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. RAM USAGE -->
+            <div class="col-xl-3 col-md-6">
+                <div class="card-custom p-3 h-100 d-flex flex-column justify-content-between">
+                    <div>
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="metric-title">System RAM Usage</span>
+                            <span class="badge badge-soft-primary">Memory</span>
+                        </div>
+                        <div id="metric-ram" class="metric-value-lg text-dark">0%</div>
+                    </div>
+                    <div class="pt-2 border-top mt-2 d-flex justify-content-between align-items-center">
+                        <span class="metric-subtext">Pod Container Host:</span>
+                        <span id="metric-host" class="fw-mono small text-truncate" style="max-width: 110px;">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MIDDLE ROW: LIVE CHART + CHAOS CONTROLLER -->
+        <div class="row g-3 mb-4">
+            <!-- LIVE CHART (col-7) -->
+            <div class="col-lg-7">
+                <div class="card-custom p-4 h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h5 class="fw-bold mb-0">Telemetry Performance Trends</h5>
+                            <span class="text-secondary small">Real-time CPU, RAM, and Proxy Latency monitoring</span>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <span class="badge bg-light text-dark border">Interval: 2s</span>
+                        </div>
+                    </div>
+                    <div class="chart-wrapper">
                         <canvas id="performanceChart"></canvas>
                     </div>
                 </div>
             </div>
 
-            <!-- Chaos Control Panel -->
-            <div class="col-md-4">
-                <div class="card p-4 h-100">
-                    <h5 class="card-title text-danger mb-3">Chaos Injection</h5>
-                    <div class="mb-3">
-                        <label class="form-label text-white small">Artificial Latency:</label>
-                        <input type="range" class="form-range" id="chaos-latency" min="0" max="5" step="0.5" value="0" onchange="document.getElementById('lat-val').innerText = this.value + 's'">
-                        <span id="lat-val" class="small text-secondary">0s</span>
+            <!-- CHAOS CONTROL PANEL (col-5) -->
+            <div class="col-lg-5">
+                <div class="card-custom p-4 h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h5 class="fw-bold text-danger mb-0">⚡ Chaos Engineering Injector</h5>
+                            <span class="text-secondary small">Simulate service degradation & node failures</span>
+                        </div>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="resetChaos()">↺ Reset Baseline</button>
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label text-white small">Error Rate (%):</label>
-                        <input type="range" class="form-range" id="chaos-error" min="0" max="100" step="10" value="0" onchange="document.getElementById('err-val').innerText = this.value + '%'">
-                        <span id="err-val" class="small text-secondary">0%</span>
+                    <div class="mb-3 p-3 bg-light rounded border">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label class="form-label fw-semibold mb-0 small">Injected Latency Delay:</label>
+                            <span id="lat-val" class="badge bg-primary">0.0s</span>
+                        </div>
+                        <input type="range" class="form-range" id="chaos-latency" min="0" max="5" step="0.5" value="0" oninput="document.getElementById('lat-val').innerText = this.value + 's'">
+                        <div class="d-flex justify-content-between text-secondary" style="font-size: 0.75rem;">
+                            <span>0s (None)</span>
+                            <span>2.5s (Degraded)</span>
+                            <span>5.0s (Critical)</span>
+                        </div>
                     </div>
 
-                    <div class="d-grid gap-2">
-                        <button class="btn btn-warning" onclick="applyChaos(false)">Apply Faults</button>
-                        <button class="btn btn-danger-custom" onclick="applyChaos(true)">💥 Trigger CPU Spike</button>
-                        <button class="btn btn-outline-secondary" onclick="resetChaos()">↺ Reset All</button>
+                    <div class="mb-3 p-3 bg-light rounded border">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label class="form-label fw-semibold mb-0 small">Artificial Error Failure Rate (%):</label>
+                            <span id="err-val" class="badge bg-danger">0%</span>
+                        </div>
+                        <input type="range" class="form-range" id="chaos-error" min="0" max="100" step="10" value="0" oninput="document.getElementById('err-val').innerText = this.value + '%'">
+                        <div class="d-flex justify-content-between text-secondary" style="font-size: 0.75rem;">
+                            <span>0% (Stable)</span>
+                            <span>50% (Flaky)</span>
+                            <span>100% (Outage)</span>
+                        </div>
+                    </div>
+
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <button class="btn btn-chaos-apply w-100 py-2" onclick="applyChaos(false)">Apply Chaos Parameters</button>
+                        </div>
+                        <div class="col-6">
+                            <button class="btn btn-chaos-spike w-100 py-2" onclick="applyChaos(true)">🔥 Trigger CPU Burn</button>
+                        </div>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Chaos History -->
-            <div class="col-md-12">
-                <div class="card p-4">
-                    <h5 class="card-title text-white mb-2">📜 Chaos Experiment History</h5>
-                    <div class="table-responsive" style="max-height: 200px;">
-                        <table class="table table-dark table-sm table-striped mb-0">
-                            <thead class="text-secondary small">
+        <!-- BOTTOM ROW: CONSOLE LOG + EXPERIMENT HISTORY (FILLS EMPTY SPACE) -->
+        <div class="row g-3">
+            <!-- CONSOLE LOG (col-7) -->
+            <div class="col-lg-7">
+                <div class="card-custom p-4 h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h5 class="fw-bold mb-0">🖥️ Live Operational Activity Stream</h5>
+                        <button class="btn btn-sm btn-link text-secondary text-decoration-none" onclick="document.getElementById('console-log').innerHTML=''">Clear Stream</button>
+                    </div>
+                    <div id="console-log" class="console-box p-3">System initialized. Listening for API proxy events...</div>
+                </div>
+            </div>
+
+            <!-- CHAOS EXPERIMENT HISTORY (col-5) -->
+            <div class="col-lg-5">
+                <div class="card-custom p-4 h-100">
+                    <h5 class="fw-bold mb-2">📜 Recent Chaos Experiments Log</h5>
+                    <div class="table-responsive" style="max-height: 220px;">
+                        <table class="table table-sm table-hover align-middle mb-0" style="font-size: 0.85rem;">
+                            <thead class="table-light">
                                 <tr>
-                                    <th>Time</th>
+                                    <th>Timestamp</th>
                                     <th>Latency</th>
-                                    <th>Error Rate</th>
+                                    <th>Error %</th>
                                     <th>CPU Spike</th>
                                 </tr>
                             </thead>
                             <tbody id="history-table-body">
-                                <tr><td colspan="4" class="text-secondary text-center">No experiments recorded yet.</td></tr>
+                                <tr><td colspan="4" class="text-secondary text-center py-3">No experiments logged yet.</td></tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
-
-            <!-- Live Logs Console -->
-            <div class="col-12">
-                <div class="card p-4">
-                    <h5 class="card-title text-white mb-2">🖥️ Activity Log</h5>
-                    <div id="console-log" class="console-box p-3 rounded text-success">System initialized. Waiting for events...</div>
-                </div>
-            </div>
         </div>
+
     </div>
 
     <script>
@@ -147,33 +347,33 @@
                     {
                         label: 'CPU Usage (%)',
                         data: Array(MAX_DATA_POINTS).fill(0),
-                        borderColor: '#0dcaf0',
-                        backgroundColor: 'rgba(13, 202, 240, 0.1)',
+                        borderColor: '#2563eb',
+                        backgroundColor: 'rgba(37, 99, 235, 0.08)',
                         fill: true,
-                        tension: 0.4,
+                        tension: 0.3,
                         borderWidth: 2,
                         pointRadius: 0
                     },
                     {
                         label: 'RAM Usage (%)',
                         data: Array(MAX_DATA_POINTS).fill(0),
-                        borderColor: '#a855f7',
-                        backgroundColor: 'rgba(168, 85, 247, 0.1)',
+                        borderColor: '#7c3aed',
+                        backgroundColor: 'rgba(124, 58, 237, 0.05)',
                         fill: true,
-                        tension: 0.4,
+                        tension: 0.3,
                         borderWidth: 2,
                         pointRadius: 0
                     },
                     {
                         label: 'Latency (ms)',
                         data: Array(MAX_DATA_POINTS).fill(0),
-                        borderColor: '#0d6efd',
-                        backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                        borderColor: '#d97706',
+                        backgroundColor: 'rgba(217, 119, 6, 0.05)',
                         fill: true,
-                        tension: 0.4,
+                        tension: 0.3,
                         borderWidth: 2,
                         pointRadius: 0,
-                        yAxisID: 'y2'
+                        yAxisID: 'y1'
                     }
                 ]
             },
@@ -181,61 +381,154 @@
                 responsive: true,
                 maintainAspectRatio: false,
                 interaction: { intersect: false, mode: 'index' },
-                plugins: { legend: { display: true, labels: { color: '#94a3b8' } } },
+                plugins: {
+                    legend: { display: true, position: 'top', labels: { boxWidth: 12, usePointStyle: true } }
+                },
                 scales: {
                     x: { display: false },
                     y: {
                         beginAtZero: true,
                         max: 100,
                         ticks: { color: '#64748b' },
-                        grid: { color: 'rgba(255,255,255,0.05)' },
-                        title: { display: true, text: 'CPU %', color: '#64748b' }
+                        grid: { color: '#f1f5f9' },
+                        title: { display: true, text: 'Utilization %', color: '#64748b' }
                     },
                     y1: {
                         beginAtZero: true,
                         position: 'right',
-                        ticks: { color: '#a855f7' },
+                        ticks: { color: '#d97706' },
                         grid: { display: false },
-                        title: { display: true, text: 'RAM %', color: '#a855f7' }
-                    },
-                    y2: {
-                        beginAtZero: true,
-                        position: 'right',
-                        ticks: { color: '#64748b' },
-                        grid: { display: false },
-                        title: { display: true, text: 'Latency (ms)', color: '#64748b' }
+                        title: { display: true, text: 'Latency (ms)', color: '#d97706' }
                     }
                 }
             }
         });
 
+        // Sparkline for Request Rate
+        const sparkCtx = document.getElementById('reqSparkline').getContext('2d');
+        const reqSparkline = new Chart(sparkCtx, {
+            type: 'line',
+            data: {
+                labels: Array(10).fill(''),
+                datasets: [{
+                    data: Array(10).fill(0),
+                    borderColor: '#2563eb',
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    fill: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                scales: { x: { display: false }, y: { display: false } }
+            }
+        });
+
+        let prevRequests = 0;
+        let lastFetchTime = Date.now();
+
         function log(msg, type = 'info') {
             const consoleBox = document.getElementById('console-log');
             const time = new Date().toLocaleTimeString();
-            const color = type === 'error' ? '#ef4444' : type === 'warn' ? '#f59e0b' : '#10b981';
-            consoleBox.innerHTML = `<div><span style="color:#64748b">[${time}]</span> <span style="color:${color}">${msg}</span></div>` + consoleBox.innerHTML;
+            const color = type === 'error' ? '#f87171' : type === 'warn' ? '#fbbf24' : '#4ade80';
+            consoleBox.innerHTML = `<div><span style="color:#94a3b8">[${time}]</span> <span style="color:${color}">${msg}</span></div>` + consoleBox.innerHTML;
             consoleBox.scrollTop = 0;
+        }
+
+        function updateSystemHealth(status, desc = '') {
+            const banner = document.getElementById('system-status-banner');
+            const badge = document.getElementById('status-badge');
+            const title = document.getElementById('status-title');
+            const descEl = document.getElementById('status-desc');
+            const icon = document.getElementById('status-icon');
+
+            if (status === 'healthy') {
+                banner.className = 'status-banner d-flex justify-content-between align-items-center';
+                badge.className = 'status-pill bg-success text-white';
+                badge.innerText = 'HEALTHY';
+                title.innerText = 'System Status: Operational';
+                descEl.innerText = desc || 'All backend services & chaos indicators within normal operating parameters.';
+                icon.innerText = '✅';
+                document.body.style.backgroundColor = '#f8fafc';
+            } else if (status === 'degraded') {
+                banner.className = 'status-banner status-degraded d-flex justify-content-between align-items-center';
+                badge.className = 'status-pill bg-warning text-dark';
+                badge.innerText = 'DEGRADED';
+                title.innerText = 'System Status: Performance Degraded';
+                descEl.innerText = desc || 'High latency or elevated CPU burn detected on backend nodes.';
+                icon.innerText = '⚠️';
+                document.body.style.backgroundColor = '#fffbeb';
+            } else {
+                banner.className = 'status-banner status-failed d-flex justify-content-between align-items-center';
+                badge.className = 'status-pill bg-danger text-white';
+                badge.innerText = 'OUTAGE / FAILURE';
+                title.innerText = 'System Status: Service Outage';
+                descEl.innerText = desc || 'Backend requests timing out or returning critical HTTP 500 errors!';
+                icon.innerText = '🚨';
+                document.body.style.backgroundColor = '#fef2f2';
+            }
         }
 
         async function fetchTelemetry() {
             try {
                 const res = await fetch('/proxy/stats');
                 const data = await res.json();
+                const now = Date.now();
 
                 if (res.ok) {
-                    document.getElementById('metric-requests').innerText = data.total_requests;
+                    // Update Requests & Rate
+                    const totalReqs = data.total_requests;
+                    document.getElementById('metric-requests-total').innerText = totalReqs;
+
+                    if (prevRequests > 0 && typeof totalReqs === 'number') {
+                        const deltaReq = totalReqs - prevRequests;
+                        const deltaTime = (now - lastFetchTime) / 1000;
+                        const rate = Math.max(0, (deltaReq / deltaTime)).toFixed(1);
+                        document.getElementById('metric-requests-rate').innerText = `${rate} req/s`;
+
+                        reqSparkline.data.datasets[0].data.push(parseFloat(rate));
+                        reqSparkline.data.datasets[0].data.shift();
+                        reqSparkline.update('none');
+                    }
+                    prevRequests = typeof totalReqs === 'number' ? totalReqs : prevRequests;
+                    lastFetchTime = now;
+
+                    // Update Metrics
                     document.getElementById('metric-latency').innerText = data.response_time_ms + ' ms';
                     document.getElementById('metric-cpu').innerText = data.cpu_usage_pct + '%';
-                    document.getElementById('metric-ram').innerText = (data.memory_usage_pct || 0).toFixed(1) + '%';
-                    console.log('CPU Usage:', data.cpu_usage_pct);
-                    document.getElementById('metric-cpu-spike').innerText = data.cpu_spike ? 'ACTIVE' : 'OFF';
-                    document.getElementById('metric-host').innerText = data.hostname;
+                    document.getElementById('metric-ram').innerText = (data.memory_usage_pct || 0) + '%';
 
-                    const isDegraded = data.cpu_usage_pct > 80 || data.response_time_ms > 2000;
-                    document.getElementById('system-status-badge').className = isDegraded
-                        ? "badge bg-warning badge-status"
-                        : "badge bg-success badge-status glow-green";
-                    document.getElementById('system-status-badge').innerText = isDegraded ? "SYSTEM DEGRADED" : "SYSTEM HEALTHY";
+                    const isSpiking = data.cpu_spike;
+                    document.getElementById('metric-cpu-spike').innerText = isSpiking ? 'ACTIVE' : 'INACTIVE';
+                    document.getElementById('metric-cpu-spike').className = isSpiking ? 'fw-bold text-danger' : 'fw-bold text-secondary';
+                    document.getElementById('cpu-spike-tag').className = isSpiking ? 'badge badge-soft-danger' : 'badge badge-soft-primary';
+                    document.getElementById('cpu-spike-tag').innerText = isSpiking ? 'High Load' : 'Normal';
+
+                    document.getElementById('metric-host').innerText = data.hostname || 'localhost';
+
+                    // Determine System Health Status & Update Prominent Banner
+                    const highLatency = data.response_time_ms > 2000;
+                    const highCpu = data.cpu_usage_pct > 80;
+
+                    if (highLatency || highCpu || isSpiking) {
+                        const reasons = [];
+                        if (highLatency) reasons.push(`Latency ${data.response_time_ms}ms`);
+                        if (highCpu) reasons.push(`CPU Load ${data.cpu_usage_pct}%`);
+                        if (isSpiking) reasons.push(`CPU Burn Thread Active`);
+                        updateSystemHealth('degraded', `System performance degraded: ${reasons.join(' | ')}`);
+                        document.getElementById('latency-status-tag').className = 'badge badge-soft-warning';
+                        document.getElementById('latency-status-tag').innerText = 'Elevated';
+                        document.getElementById('latency-trend').className = 'small fw-semibold text-warning';
+                        document.getElementById('latency-trend').innerText = '⚠️ Slow';
+                    } else {
+                        updateSystemHealth('healthy');
+                        document.getElementById('latency-status-tag').className = 'badge badge-soft-success';
+                        document.getElementById('latency-status-tag').innerText = 'Normal';
+                        document.getElementById('latency-trend').className = 'small fw-semibold text-success';
+                        document.getElementById('latency-trend').innerText = '✓ Optimal';
+                    }
 
                     // Update Chart
                     chart.data.datasets[0].data.push(data.cpu_usage_pct);
@@ -247,53 +540,49 @@
                     chart.update('none');
 
                     if (data.response_time_ms > 500) {
-                        log(`HTTP 200 - Slow response: ${data.response_time_ms}ms`, 'warn');
+                        log(`HTTP 200 OK - Latency delay: ${data.response_time_ms}ms`, 'warn');
                     }
                 } else {
-                    document.getElementById('system-status-badge').className = "badge bg-danger badge-status glow-red";
-                    document.getElementById('system-status-badge').innerText = "FAILURE";
+                    updateSystemHealth('failed', `Backend Service Error: HTTP ${res.status} ${data.error || ''}`);
                     log(`HTTP ${res.status} - ${data.error || 'Request failed'}`, 'error');
                 }
             } catch (err) {
-                document.getElementById('system-status-badge').className = "badge bg-danger badge-status glow-red";
-                document.getElementById('system-status-badge').innerText = "UNREACHABLE";
+                updateSystemHealth('failed', `Network Connection Outage: Unable to reach /proxy/stats API endpoint.`);
                 log(`Network Connection Error: ${err}`, 'error');
             }
-
-            // Refresh chaos experiment history
-            await fetchHistory();
         }
 
         async function fetchHistory() {
             try {
                 const res = await fetch('/proxy/chaos/history');
-                if (!res.ok) return;
                 const data = await res.json();
                 const tbody = document.getElementById('history-table-body');
-                const items = data.history || [];
-                if (items.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="4" class="text-secondary text-center">No experiments recorded yet.</td></tr>';
-                    return;
+
+                if (res.ok && data.history && data.history.length > 0) {
+                    tbody.innerHTML = data.history.slice(0, 10).map(item => {
+                        const dateStr = item.ts ? new Date(item.ts * 1000).toLocaleTimeString() : 'Just now';
+                        const spikeBadge = item.cpu_spike
+                            ? '<span class="badge bg-danger">ON</span>'
+                            : '<span class="badge bg-light text-dark">OFF</span>';
+                        return `
+                            <tr>
+                                <td class="fw-mono">${dateStr}</td>
+                                <td>${item.latency_seconds || 0}s</td>
+                                <td>${item.error_rate_pct || 0}%</td>
+                                <td>${spikeBadge}</td>
+                            </tr>
+                        `;
+                    }).join('');
                 }
-                tbody.innerHTML = items.map(h => {
-                    const ts = h.ts ? new Date(h.ts * 1000).toLocaleTimeString() : '—';
-                    const spike = h.cpu_spike ? '<span class="badge bg-danger">SPIKE</span>' : '—';
-                    return `<tr>
-                        <td class="text-secondary small">${ts}</td>
-                        <td>${h.latency_seconds || 0}s</td>
-                        <td>${h.error_rate_pct || 0}%</td>
-                        <td>${spike}</td>
-                    </tr>`;
-                }).join('');
             } catch (err) {
-                console.warn('History fetch failed:', err);
+                // Ignore background history fetch errors silently
             }
         }
 
         async function applyChaos(cpuSpike = false) {
             const latency = document.getElementById('chaos-latency').value;
             const errorRate = document.getElementById('chaos-error').value;
-            log(`Injecting Chaos: Latency=${latency}s, Error=${errorRate}%, Spike=${cpuSpike}`, 'warn');
+            log(`Triggering Chaos Injection: Latency=${latency}s, ErrorRate=${errorRate}%, Spike=${cpuSpike}`, 'warn');
 
             try {
                 const res = await fetch('/proxy/chaos', {
@@ -302,32 +591,34 @@
                     body: JSON.stringify({ latency, error_rate: errorRate, cpu_spike: cpuSpike })
                 });
                 const data = await res.json();
-                log(`Chaos Engine Updated`, 'warn');
+                log(`Chaos Engine Updated: ${data.message || 'Success'}`, 'warn');
+                fetchHistory();
             } catch(e) {
                 log(`Chaos Update Failed: ${e}`, 'error');
             }
         }
 
         async function resetChaos() {
-            log('Resetting all chaos state...', 'warn');
+            log('Resetting all Chaos state to baseline defaults...', 'info');
             try {
-                const res = await fetch('/proxy/chaos/reset', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
-                });
+                const res = await fetch('/proxy/chaos/reset', { method: 'POST' });
                 const data = await res.json();
-                log('Chaos state reset to defaults', 'warn');
                 document.getElementById('chaos-latency').value = 0;
-                document.getElementById('lat-val').innerText = '0s';
+                document.getElementById('lat-val').innerText = '0.0s';
                 document.getElementById('chaos-error').value = 0;
                 document.getElementById('err-val').innerText = '0%';
-                await fetchHistory();
+                log('Chaos state successfully reset to 0.', 'info');
+                fetchHistory();
             } catch(e) {
-                log(`Reset Failed: ${e}`, 'error');
+                log(`Reset Chaos Failed: ${e}`, 'error');
             }
         }
 
+        // Initialize polling intervals
         setInterval(fetchTelemetry, 2000);
+        setInterval(fetchHistory, 5000);
+        fetchTelemetry();
+        fetchHistory();
     </script>
 </body>
 </html>
