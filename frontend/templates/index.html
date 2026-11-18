@@ -8,14 +8,15 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --bg-canvas: #000000;
-            --card-bg: #7a7a7a;
-            --text-primary: #0f172a;
-            --text-secondary: #475569;
-            --border-color: #ffffff;
-            --status-healthy-bg: #ecfdf5;
+            --bg-canvas: #0b1120;
+            --card-bg: #111827;
+            --card-inner: #1e293b;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --border-color: #1f2937;
+            --status-healthy-bg: rgba(16, 185, 129, 0.12);
             --status-healthy-border: #10b981;
-            --status-healthy-text: #065f46;
+            --status-healthy-text: #6ee7b7;
         }
 
         body {
@@ -25,46 +26,45 @@
             transition: background-color 0.4s ease;
         }
 
-        /* Prominent Health Banner that tints whole page header */
+        /* Prominent Health Banner */
         .status-banner {
             border-radius: 14px;
             padding: 1.25rem 1.75rem;
-            margin-bottom: 1.75rem;
-            border: 4px solid var(--status-healthy-border);
+            margin-bottom: 1.25rem;
+            border: 2px solid var(--status-healthy-border);
             background-color: var(--status-healthy-bg);
             color: var(--status-healthy-text);
             transition: all 0.4s ease;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
         }
 
         .status-banner.status-degraded {
-            background-color: #fef3c7;
+            background-color: rgba(245, 158, 11, 0.14);
             border-color: #f59e0b;
-            color: #92400e;
+            color: #fcd34d;
             animation: pulse-degraded 2s infinite;
         }
 
         .status-banner.status-failed {
-            background-color: #fee2e2;
+            background-color: rgba(239, 68, 68, 0.15);
             border-color: #ef4444;
-            color: #991b1b;
+            color: #fca5a5;
             animation: pulse-failed 1.5s infinite;
         }
 
         @keyframes pulse-degraded {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
+            0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.35); }
             50% { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
         }
 
         @keyframes pulse-failed {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
+            0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
             50% { box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); }
         }
 
         .status-pill {
-            font-size: 0.95rem;
+            font-size: 0.85rem;
             font-weight: 700;
-            padding: 0.5rem 1.25rem;
+            padding: 0.45rem 1.15rem;
             border-radius: 50rem;
             letter-spacing: 0.05em;
             text-transform: uppercase;
@@ -74,24 +74,29 @@
             background: var(--card-bg);
             border: 1px solid var(--border-color);
             border-radius: 12px;
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
         }
 
-        .card-custom:hover {
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+        .inner-panel {
+            background: var(--card-inner);
+            border: 1px solid #334155;
+            border-radius: 10px;
+        }
+
+        .border-top-subtle {
+            border-top: 1px solid #1f2937 !important;
         }
 
         .metric-title {
             font-size: 0.75rem;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.06em;
             color: var(--text-secondary);
         }
 
         .metric-value-lg {
-            font-size: 1.85rem;
+            font-size: 1.9rem;
             font-weight: 800;
             line-height: 1.2;
             color: var(--text-primary);
@@ -102,11 +107,66 @@
             color: var(--text-secondary);
         }
 
-        .console-box {
+        /* Animated Mailman / Packet Delivery Pipeline */
+        .pipeline-track {
+            position: relative;
+            height: 44px;
             background: #0f172a;
+            border: 1px solid #1e293b;
+            border-radius: 10px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1rem;
+        }
+
+        .pipeline-node {
+            z-index: 2;
+            background: #1e293b;
+            border: 1px solid #334155;
+            padding: 0.25rem 0.7rem;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: #e2e8f0;
+        }
+
+        .pipeline-wire {
+            position: absolute;
+            left: 10%;
+            right: 10%;
+            height: 2px;
+            background: repeating-linear-gradient(90deg, #334155 0, #334155 8px, transparent 8px, transparent 14px);
+            z-index: 1;
+        }
+
+        .mailman-courier {
+            position: absolute;
+            left: 12%;
+            z-index: 3;
+            font-size: 1.25rem;
+            animation: deliver-packet var(--courier-speed, 2.2s) linear infinite;
+        }
+
+        .mailman-courier.paused {
+            animation-play-state: paused;
+        }
+
+        @keyframes deliver-packet {
+            0%   { left: 12%; transform: scaleX(1); }
+            48%  { left: 82%; transform: scaleX(1); }
+            50%  { left: 82%; transform: scaleX(-1); }
+            98%  { left: 12%; transform: scaleX(-1); }
+            100% { left: 12%; transform: scaleX(1); }
+        }
+
+        .console-box {
+            background: #060b16;
             color: #38bdf8;
+            border: 1px solid #1e293b;
             font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-            font-size: 0.825rem;
+            font-size: 0.82rem;
             height: 220px;
             overflow-y: auto;
             border-radius: 8px;
@@ -119,15 +179,21 @@
             width: 100%;
         }
 
-        .badge-soft-primary { background: #e0f2fe; color: #0369a1; }
-        .badge-soft-success { background: #dcfce7; color: #15803d; }
-        .badge-soft-warning { background: #fef3c7; color: #b45309; }
-        .badge-soft-danger  { background: #fee2e2; color: #b91c1c; }
+        .table-dark-custom {
+            --bs-table-bg: transparent;
+            --bs-table-color: #e2e8f0;
+            --bs-table-border-color: #1f2937;
+            --bs-table-hover-bg: rgba(255, 255, 255, 0.04);
+        }
 
-        .form-range::-webkit-slider-thumb { background: #2563eb; }
-        .btn-chaos-apply { background-color: #2563eb; color: #fff; font-weight: 600; }
+        .badge-soft-primary { background: rgba(56, 189, 248, 0.16); color: #38bdf8; }
+        .badge-soft-success { background: rgba(16, 185, 129, 0.16); color: #34d399; }
+        .badge-soft-warning { background: rgba(245, 158, 11, 0.18); color: #fbbf24; }
+        .badge-soft-danger  { background: rgba(239, 68, 68, 0.18); color: #f87171; }
+
+        .btn-chaos-apply { background-color: #2563eb; color: #fff; font-weight: 600; border: none; }
         .btn-chaos-apply:hover { background-color: #1d4ed8; color: #fff; }
-        .btn-chaos-spike { background-color: #dc2626; color: #fff; font-weight: 600; }
+        .btn-chaos-spike { background-color: #dc2626; color: #fff; font-weight: 600; border: none; }
         .btn-chaos-spike:hover { background-color: #b91c1c; color: #fff; }
     </style>
 </head>
@@ -135,7 +201,7 @@
     <div class="container-fluid px-4" style="max-width: 1400px;">
 
         <!-- PROMINENT SYSTEM HEALTH BANNER -->
-        <div id="system-status-banner" class="status-banner d-flex justify-content-between align-items-center">
+        <div id="system-status-banner" class="status-banner d-flex flex-wrap justify-content-between align-items-center gap-3">
             <div class="d-flex align-items-center gap-3">
                 <div id="status-icon" style="font-size: 2rem;">✅</div>
                 <div>
@@ -143,31 +209,48 @@
                     <p id="status-desc" class="mb-0 small opacity-75">All resilience thresholds within normal baseline parameters.</p>
                 </div>
             </div>
-            <div class="d-flex align-items-center gap-3">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <span id="stale-badge" class="status-pill bg-warning text-dark d-none">STALE CACHE</span>
+                <span id="cb-badge" class="status-pill bg-secondary text-white">CB: CLOSED</span>
                 <span id="status-badge" class="status-pill bg-success text-white">HEALTHY</span>
             </div>
         </div>
 
-        <!-- TOP METRICS ROW (EASY TO UNDERSTAND REQUESTS & TELEMETRY) -->
+        <!-- LIVE REQUEST COURIER / MAILMAN PIPELINE -->
+        <div class="card-custom p-3 mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="metric-title">Live BFF &rarr; API &rarr; Redis Request Flow</span>
+                <span id="courier-status-text" class="metric-subtext">Courier active — nominal round-trip</span>
+            </div>
+            <div class="pipeline-track">
+                <div class="pipeline-wire"></div>
+                <div class="pipeline-node">🌐 Frontend BFF</div>
+                <div id="mailman-icon" class="mailman-courier" title="Active Request Packet">🏃‍♂️✉️</div>
+                <div class="pipeline-node">⚙️ API Pod (<span id="pipeline-pod-id">-</span>)</div>
+                <div class="pipeline-node">🗄️ Redis State</div>
+            </div>
+        </div>
+
+        <!-- TOP METRICS ROW -->
         <div class="row g-3 mb-4">
 
-            <!-- 1. EASY TO UNDERSTAND REQUESTS METRIC -->
+            <!-- 1. TRAFFIC VOLUME -->
             <div class="col-xl-3 col-md-6">
                 <div class="card-custom p-3 h-100 d-flex flex-column justify-content-between">
                     <div>
                         <div class="d-flex justify-content-between align-items-center mb-1">
-                            <span class="metric-title">Traffic Volume & Rate</span>
-                            <span class="badge badge-soft-primary">Live</span>
+                            <span class="metric-title">Traffic Volume &amp; Rate</span>
+                            <span id="attempts-badge" class="badge badge-soft-primary">1 try</span>
                         </div>
                         <div class="d-flex align-items-baseline gap-2">
                             <div id="metric-requests-total" class="metric-value-lg">0</div>
                             <span class="metric-subtext">total requests</span>
                         </div>
                     </div>
-                    <div class="pt-2 border-top mt-2 d-flex justify-content-between align-items-center">
+                    <div class="pt-2 border-top-subtle mt-2 d-flex justify-content-between align-items-center">
                         <div>
-                            <span class="text-secondary small">Current Throughput:</span>
-                            <span id="metric-requests-rate" class="fw-bold text-primary ms-1">0.0 req/s</span>
+                            <span class="metric-subtext">Throughput:</span>
+                            <span id="metric-requests-rate" class="fw-bold text-info ms-1">0.0 req/s</span>
                         </div>
                         <div style="width: 70px; height: 24px;">
                             <canvas id="reqSparkline"></canvas>
@@ -184,10 +267,10 @@
                             <span class="metric-title">Response Latency</span>
                             <span id="latency-status-tag" class="badge badge-soft-success">Normal</span>
                         </div>
-                        <div id="metric-latency" class="metric-value-lg text-primary">0 ms</div>
+                        <div id="metric-latency" class="metric-value-lg text-info">0 ms</div>
                     </div>
-                    <div class="pt-2 border-top mt-2 d-flex justify-content-between align-items-center">
-                        <span class="metric-subtext">Target Threshold: &lt; 500 ms</span>
+                    <div class="pt-2 border-top-subtle mt-2 d-flex justify-content-between align-items-center">
+                        <span class="metric-subtext">Target: &lt; 500 ms</span>
                         <span id="latency-trend" class="small fw-semibold text-success">✓ Optimal</span>
                     </div>
                 </div>
@@ -201,9 +284,12 @@
                             <span class="metric-title">Backend CPU Load</span>
                             <span id="cpu-spike-tag" class="badge badge-soft-primary">Normal</span>
                         </div>
-                        <div id="metric-cpu" class="metric-value-lg">0%</div>
+                        <div class="d-flex align-items-baseline gap-2">
+                            <div id="metric-cpu" class="metric-value-lg">0%</div>
+                            <span id="metric-cores" class="metric-subtext">(1 vCPU)</span>
+                        </div>
                     </div>
-                    <div class="pt-2 border-top mt-2 d-flex justify-content-between align-items-center">
+                    <div class="pt-2 border-top-subtle mt-2 d-flex justify-content-between align-items-center">
                         <span class="metric-subtext">Spike Engine:</span>
                         <span id="metric-cpu-spike" class="fw-bold text-secondary">INACTIVE</span>
                     </div>
@@ -215,14 +301,14 @@
                 <div class="card-custom p-3 h-100 d-flex flex-column justify-content-between">
                     <div>
                         <div class="d-flex justify-content-between align-items-center mb-1">
-                            <span class="metric-title">System RAM Usage</span>
-                            <span class="badge badge-soft-primary">Memory</span>
+                            <span class="metric-title">Container RAM Usage</span>
+                            <span class="badge badge-soft-primary">Cgroup</span>
                         </div>
-                        <div id="metric-ram" class="metric-value-lg text-dark">0%</div>
+                        <div id="metric-ram" class="metric-value-lg">0%</div>
                     </div>
-                    <div class="pt-2 border-top mt-2 d-flex justify-content-between align-items-center">
-                        <span class="metric-subtext">Pod Container Host:</span>
-                        <span id="metric-host" class="fw-mono small text-truncate" style="max-width: 110px;">-</span>
+                    <div class="pt-2 border-top-subtle mt-2 d-flex justify-content-between align-items-center">
+                        <span class="metric-subtext">Served by Pod:</span>
+                        <span id="metric-host" class="font-monospace small text-info text-truncate" style="max-width: 120px;">-</span>
                     </div>
                 </div>
             </div>
@@ -236,11 +322,9 @@
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <div>
                             <h5 class="fw-bold mb-0">Telemetry Performance Trends</h5>
-                            <span class="text-secondary small">Real-time CPU, RAM, and Proxy Latency monitoring</span>
+                            <span class="metric-subtext">Real-time Cgroup CPU, RAM, and Proxy Latency monitoring</span>
                         </div>
-                        <div class="d-flex gap-2">
-                            <span class="badge bg-light text-dark border">Interval: 2s</span>
-                        </div>
+                        <span class="badge bg-dark text-light border border-secondary">Interval: 2s</span>
                     </div>
                     <div class="chart-wrapper">
                         <canvas id="performanceChart"></canvas>
@@ -254,31 +338,31 @@
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <div>
                             <h5 class="fw-bold text-danger mb-0">⚡ Chaos Engineering Injector</h5>
-                            <span class="text-secondary small">Simulate service degradation & node failures</span>
+                            <span class="metric-subtext">Simulate service degradation &amp; node failures</span>
                         </div>
-                        <button class="btn btn-sm btn-outline-secondary" onclick="resetChaos()">↺ Reset Baseline</button>
+                        <button class="btn btn-sm btn-outline-light" onclick="resetChaos()">↺ Reset Baseline</button>
                     </div>
 
-                    <div class="mb-3 p-3 bg-light rounded border">
+                    <div class="mb-3 p-3 inner-panel">
                         <div class="d-flex justify-content-between align-items-center mb-1">
                             <label class="form-label fw-semibold mb-0 small">Injected Latency Delay:</label>
                             <span id="lat-val" class="badge bg-primary">0.0s</span>
                         </div>
-                        <input type="range" class="form-range" id="chaos-latency" min="0" max="5" step="0.5" value="0" oninput="document.getElementById('lat-val').innerText = this.value + 's'">
-                        <div class="d-flex justify-content-between text-secondary" style="font-size: 0.75rem;">
+                        <input type="range" class="form-range" id="chaos-latency" min="0" max="10" step="0.5" value="0" oninput="document.getElementById('lat-val').innerText = this.value + 's'">
+                        <div class="d-flex justify-content-between metric-subtext" style="font-size: 0.75rem;">
                             <span>0s (None)</span>
-                            <span>2.5s (Degraded)</span>
-                            <span>5.0s (Critical)</span>
+                            <span>5.0s (Degraded)</span>
+                            <span>10.0s (Severe)</span>
                         </div>
                     </div>
 
-                    <div class="mb-3 p-3 bg-light rounded border">
+                    <div class="mb-3 p-3 inner-panel">
                         <div class="d-flex justify-content-between align-items-center mb-1">
                             <label class="form-label fw-semibold mb-0 small">Artificial Error Failure Rate (%):</label>
                             <span id="err-val" class="badge bg-danger">0%</span>
                         </div>
                         <input type="range" class="form-range" id="chaos-error" min="0" max="100" step="10" value="0" oninput="document.getElementById('err-val').innerText = this.value + '%'">
-                        <div class="d-flex justify-content-between text-secondary" style="font-size: 0.75rem;">
+                        <div class="d-flex justify-content-between metric-subtext" style="font-size: 0.75rem;">
                             <span>0% (Stable)</span>
                             <span>50% (Flaky)</span>
                             <span>100% (Outage)</span>
@@ -297,9 +381,8 @@
             </div>
         </div>
 
-        <!-- BOTTOM ROW: CONSOLE LOG + EXPERIMENT HISTORY (FILLS EMPTY SPACE) -->
+        <!-- BOTTOM ROW: CONSOLE LOG + EXPERIMENT HISTORY -->
         <div class="row g-3">
-            <!-- CONSOLE LOG (col-7) -->
             <div class="col-lg-7">
                 <div class="card-custom p-4 h-100">
                     <div class="d-flex justify-content-between align-items-center mb-2">
@@ -310,14 +393,13 @@
                 </div>
             </div>
 
-            <!-- CHAOS EXPERIMENT HISTORY (col-5) -->
             <div class="col-lg-5">
                 <div class="card-custom p-4 h-100">
                     <h5 class="fw-bold mb-2">📜 Recent Chaos Experiments Log</h5>
                     <div class="table-responsive" style="max-height: 220px;">
-                        <table class="table table-sm table-hover align-middle mb-0" style="font-size: 0.85rem;">
-                            <thead class="table-light">
-                                <tr>
+                        <table class="table table-sm table-dark-custom table-hover align-middle mb-0" style="font-size: 0.85rem;">
+                            <thead>
+                                <tr class="text-secondary">
                                     <th>Timestamp</th>
                                     <th>Latency</th>
                                     <th>Error %</th>
@@ -347,8 +429,8 @@
                     {
                         label: 'CPU Usage (%)',
                         data: Array(MAX_DATA_POINTS).fill(0),
-                        borderColor: '#2563eb',
-                        backgroundColor: 'rgba(37, 99, 235, 0.08)',
+                        borderColor: '#38bdf8',
+                        backgroundColor: 'rgba(56, 189, 248, 0.12)',
                         fill: true,
                         tension: 0.3,
                         borderWidth: 2,
@@ -357,8 +439,8 @@
                     {
                         label: 'RAM Usage (%)',
                         data: Array(MAX_DATA_POINTS).fill(0),
-                        borderColor: '#7c3aed',
-                        backgroundColor: 'rgba(124, 58, 237, 0.05)',
+                        borderColor: '#a78bfa',
+                        backgroundColor: 'rgba(167, 139, 250, 0.08)',
                         fill: true,
                         tension: 0.3,
                         borderWidth: 2,
@@ -367,8 +449,8 @@
                     {
                         label: 'Latency (ms)',
                         data: Array(MAX_DATA_POINTS).fill(0),
-                        borderColor: '#d97706',
-                        backgroundColor: 'rgba(217, 119, 6, 0.05)',
+                        borderColor: '#fbbf24',
+                        backgroundColor: 'rgba(251, 191, 36, 0.08)',
                         fill: true,
                         tension: 0.3,
                         borderWidth: 2,
@@ -382,29 +464,32 @@
                 maintainAspectRatio: false,
                 interaction: { intersect: false, mode: 'index' },
                 plugins: {
-                    legend: { display: true, position: 'top', labels: { boxWidth: 12, usePointStyle: true } }
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: { color: '#cbd5e1', boxWidth: 12, usePointStyle: true }
+                    }
                 },
                 scales: {
                     x: { display: false },
                     y: {
                         beginAtZero: true,
                         max: 100,
-                        ticks: { color: '#64748b' },
-                        grid: { color: '#f1f5f9' },
-                        title: { display: true, text: 'Utilization %', color: '#64748b' }
+                        ticks: { color: '#94a3b8' },
+                        grid: { color: '#1e293b' },
+                        title: { display: true, text: 'Utilization %', color: '#94a3b8' }
                     },
                     y1: {
                         beginAtZero: true,
                         position: 'right',
-                        ticks: { color: '#d97706' },
+                        ticks: { color: '#fbbf24' },
                         grid: { display: false },
-                        title: { display: true, text: 'Latency (ms)', color: '#d97706' }
+                        title: { display: true, text: 'Latency (ms)', color: '#fbbf24' }
                     }
                 }
             }
         });
 
-        // Sparkline for Request Rate
         const sparkCtx = document.getElementById('reqSparkline').getContext('2d');
         const reqSparkline = new Chart(sparkCtx, {
             type: 'line',
@@ -412,7 +497,7 @@
                 labels: Array(10).fill(''),
                 datasets: [{
                     data: Array(10).fill(0),
-                    borderColor: '#2563eb',
+                    borderColor: '#38bdf8',
                     borderWidth: 2,
                     pointRadius: 0,
                     fill: false
@@ -433,8 +518,53 @@
             const consoleBox = document.getElementById('console-log');
             const time = new Date().toLocaleTimeString();
             const color = type === 'error' ? '#f87171' : type === 'warn' ? '#fbbf24' : '#4ade80';
-            consoleBox.innerHTML = `<div><span style="color:#94a3b8">[${time}]</span> <span style="color:${color}">${msg}</span></div>` + consoleBox.innerHTML;
+            consoleBox.innerHTML = `<div><span style="color:#64748b">[${time}]</span> <span style="color:${color}">${msg}</span></div>` + consoleBox.innerHTML;
             consoleBox.scrollTop = 0;
+        }
+
+        function updateCourierAnimation(state, latencyMs) {
+            const mailman = document.getElementById('mailman-icon');
+            const statusText = document.getElementById('courier-status-text');
+
+            if (state === 'failed') {
+                mailman.innerText = '🛡️🚫';
+                mailman.classList.add('paused');
+                statusText.innerText = 'Circuit / Upstream Fault — packet delivery blocked';
+                statusText.className = 'small text-danger fw-semibold';
+            } else if (state === 'degraded') {
+                mailman.innerText = '🐢📦';
+                mailman.classList.remove('paused');
+                mailman.style.setProperty('--courier-speed', '5.5s');
+                statusText.innerText = `High latency / load (${latencyMs}ms) — courier throttled`;
+                statusText.className = 'small text-warning fw-semibold';
+            } else {
+                mailman.innerText = '🏃‍♂️✉️';
+                mailman.classList.remove('paused');
+                mailman.style.setProperty('--courier-speed', '2.0s');
+                statusText.innerText = `Courier active — nominal round-trip (${latencyMs}ms)`;
+                statusText.className = 'metric-subtext';
+            }
+        }
+
+        function updateResilienceBadges(data) {
+            const cbBadge = document.getElementById('cb-badge');
+            const staleBadge = document.getElementById('stale-badge');
+            const cbState = data.circuit_state || 'CLOSED';
+
+            cbBadge.innerText = `CB: ${cbState}`;
+            if (cbState === 'OPEN') {
+                cbBadge.className = 'status-pill bg-danger text-white';
+            } else if (cbState === 'HALF_OPEN') {
+                cbBadge.className = 'status-pill bg-warning text-dark';
+            } else {
+                cbBadge.className = 'status-pill bg-secondary text-white';
+            }
+
+            if (data.stale) {
+                staleBadge.classList.remove('d-none');
+            } else {
+                staleBadge.classList.add('d-none');
+            }
         }
 
         function updateSystemHealth(status, desc = '') {
@@ -445,29 +575,26 @@
             const icon = document.getElementById('status-icon');
 
             if (status === 'healthy') {
-                banner.className = 'status-banner d-flex justify-content-between align-items-center';
+                banner.className = 'status-banner d-flex flex-wrap justify-content-between align-items-center gap-3';
                 badge.className = 'status-pill bg-success text-white';
                 badge.innerText = 'HEALTHY';
                 title.innerText = 'System Status: Operational';
                 descEl.innerText = desc || 'All backend services & chaos indicators within normal operating parameters.';
                 icon.innerText = '✅';
-                document.body.style.backgroundColor = '#f8fafc';
             } else if (status === 'degraded') {
-                banner.className = 'status-banner status-degraded d-flex justify-content-between align-items-center';
+                banner.className = 'status-banner status-degraded d-flex flex-wrap justify-content-between align-items-center gap-3';
                 badge.className = 'status-pill bg-warning text-dark';
                 badge.innerText = 'DEGRADED';
                 title.innerText = 'System Status: Performance Degraded';
                 descEl.innerText = desc || 'High latency or elevated CPU burn detected on backend nodes.';
                 icon.innerText = '⚠️';
-                document.body.style.backgroundColor = '#fffbeb';
             } else {
-                banner.className = 'status-banner status-failed d-flex justify-content-between align-items-center';
+                banner.className = 'status-banner status-failed d-flex flex-wrap justify-content-between align-items-center gap-3';
                 badge.className = 'status-pill bg-danger text-white';
                 badge.innerText = 'OUTAGE / FAILURE';
                 title.innerText = 'System Status: Service Outage';
                 descEl.innerText = desc || 'Backend requests timing out or returning critical HTTP 500 errors!';
                 icon.innerText = '🚨';
-                document.body.style.backgroundColor = '#fef2f2';
             }
         }
 
@@ -477,10 +604,12 @@
                 const data = await res.json();
                 const now = Date.now();
 
+                updateResilienceBadges(data);
+
                 if (res.ok) {
-                    // Update Requests & Rate
                     const totalReqs = data.total_requests;
                     document.getElementById('metric-requests-total').innerText = totalReqs;
+                    document.getElementById('attempts-badge').innerText = `${data.attempts || 1} try`;
 
                     if (prevRequests > 0 && typeof totalReqs === 'number') {
                         const deltaReq = totalReqs - prevRequests;
@@ -495,42 +624,45 @@
                     prevRequests = typeof totalReqs === 'number' ? totalReqs : prevRequests;
                     lastFetchTime = now;
 
-                    // Update Metrics
                     document.getElementById('metric-latency').innerText = data.response_time_ms + ' ms';
                     document.getElementById('metric-cpu').innerText = data.cpu_usage_pct + '%';
+                    document.getElementById('metric-cores').innerText = `(${data.cpu_cores_allocated || 1} vCPU)`;
                     document.getElementById('metric-ram').innerText = (data.memory_usage_pct || 0) + '%';
 
-                    const isSpiking = data.cpu_spike;
+                    const chaosCfg = data.chaos_config || {};
+                    const isSpiking = Boolean(chaosCfg.cpu_spike || data.cpu_spike);
                     document.getElementById('metric-cpu-spike').innerText = isSpiking ? 'ACTIVE' : 'INACTIVE';
                     document.getElementById('metric-cpu-spike').className = isSpiking ? 'fw-bold text-danger' : 'fw-bold text-secondary';
                     document.getElementById('cpu-spike-tag').className = isSpiking ? 'badge badge-soft-danger' : 'badge badge-soft-primary';
                     document.getElementById('cpu-spike-tag').innerText = isSpiking ? 'High Load' : 'Normal';
 
-                    document.getElementById('metric-host').innerText = data.hostname || 'localhost';
+                    const host = data.hostname || 'localhost';
+                    document.getElementById('metric-host').innerText = host;
+                    document.getElementById('pipeline-pod-id').innerText = host.slice(0, 12);
 
-                    // Determine System Health Status & Update Prominent Banner
-                    const highLatency = data.response_time_ms > 2000;
+                    const highLatency = data.response_time_ms > 1500;
                     const highCpu = data.cpu_usage_pct > 80;
 
                     if (highLatency || highCpu || isSpiking) {
                         const reasons = [];
                         if (highLatency) reasons.push(`Latency ${data.response_time_ms}ms`);
                         if (highCpu) reasons.push(`CPU Load ${data.cpu_usage_pct}%`);
-                        if (isSpiking) reasons.push(`CPU Burn Thread Active`);
+                        if (isSpiking) reasons.push(`Multi-Core CPU Burn Active`);
                         updateSystemHealth('degraded', `System performance degraded: ${reasons.join(' | ')}`);
+                        updateCourierAnimation('degraded', data.response_time_ms);
                         document.getElementById('latency-status-tag').className = 'badge badge-soft-warning';
                         document.getElementById('latency-status-tag').innerText = 'Elevated';
                         document.getElementById('latency-trend').className = 'small fw-semibold text-warning';
                         document.getElementById('latency-trend').innerText = '⚠️ Slow';
                     } else {
                         updateSystemHealth('healthy');
+                        updateCourierAnimation('healthy', data.response_time_ms);
                         document.getElementById('latency-status-tag').className = 'badge badge-soft-success';
                         document.getElementById('latency-status-tag').innerText = 'Normal';
                         document.getElementById('latency-trend').className = 'small fw-semibold text-success';
                         document.getElementById('latency-trend').innerText = '✓ Optimal';
                     }
 
-                    // Update Chart
                     chart.data.datasets[0].data.push(data.cpu_usage_pct);
                     chart.data.datasets[0].data.shift();
                     chart.data.datasets[1].data.push(data.memory_usage_pct || 0);
@@ -540,14 +672,16 @@
                     chart.update('none');
 
                     if (data.response_time_ms > 500) {
-                        log(`HTTP 200 OK - Latency delay: ${data.response_time_ms}ms`, 'warn');
+                        log(`HTTP 200 OK [${host.slice(0, 8)}] - Latency delay: ${data.response_time_ms}ms`, 'warn');
                     }
                 } else {
-                    updateSystemHealth('failed', `Backend Service Error: HTTP ${res.status} ${data.error || ''}`);
-                    log(`HTTP ${res.status} - ${data.error || 'Request failed'}`, 'error');
+                    updateSystemHealth('failed', `Backend Service Error: HTTP ${res.status} — ${data.error || ''}`);
+                    updateCourierAnimation('failed', data.response_time_ms || 0);
+                    log(`HTTP ${res.status} [CB=${data.circuit_state || 'OPEN'}] - ${data.error || 'Request failed'}`, 'error');
                 }
             } catch (err) {
                 updateSystemHealth('failed', `Network Connection Outage: Unable to reach /proxy/stats API endpoint.`);
+                updateCourierAnimation('failed', 0);
                 log(`Network Connection Error: ${err}`, 'error');
             }
         }
@@ -563,10 +697,10 @@
                         const dateStr = item.ts ? new Date(item.ts * 1000).toLocaleTimeString() : 'Just now';
                         const spikeBadge = item.cpu_spike
                             ? '<span class="badge bg-danger">ON</span>'
-                            : '<span class="badge bg-light text-dark">OFF</span>';
+                            : '<span class="badge bg-secondary">OFF</span>';
                         return `
                             <tr>
-                                <td class="fw-mono">${dateStr}</td>
+                                <td class="font-monospace">${dateStr}</td>
                                 <td>${item.latency_seconds || 0}s</td>
                                 <td>${item.error_rate_pct || 0}%</td>
                                 <td>${spikeBadge}</td>
@@ -593,7 +727,7 @@
                 const data = await res.json();
                 log(`Chaos Engine Updated: ${data.message || 'Success'}`, 'warn');
                 fetchHistory();
-            } catch(e) {
+            } catch (e) {
                 log(`Chaos Update Failed: ${e}`, 'error');
             }
         }
@@ -602,19 +736,19 @@
             log('Resetting all Chaos state to baseline defaults...', 'info');
             try {
                 const res = await fetch('/proxy/chaos/reset', { method: 'POST' });
-                const data = await res.json();
+                await res.json();
                 document.getElementById('chaos-latency').value = 0;
                 document.getElementById('lat-val').innerText = '0.0s';
                 document.getElementById('chaos-error').value = 0;
                 document.getElementById('err-val').innerText = '0%';
-                log('Chaos state successfully reset to 0.', 'info');
+                log('Chaos state and Circuit Breaker reset to baseline.', 'info');
                 fetchHistory();
-            } catch(e) {
+                fetchTelemetry();
+            } catch (e) {
                 log(`Reset Chaos Failed: ${e}`, 'error');
             }
         }
 
-        // Initialize polling intervals
         setInterval(fetchTelemetry, 2000);
         setInterval(fetchHistory, 5000);
         fetchTelemetry();

@@ -1,40 +1,90 @@
-version: '4.97'
-
 services:
   redis:
-    image: redis:7-alpine
-    container_name: resilience-redis
-    restart: always
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--maxmemory", "96mb", "--maxmemory-policy", "allkeys-lru"]
     ports:
-      - "8380:6379"   # host 8380 -> container 6379
+      - "127.0.0.1:8380:6379"
+    networks:
+      - resilience-net
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 128M
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 3s
       retries: 5
-    # Single-replica by design: this lab exists to study the failure
-    # of the shared state tier. Add replicas + a PVC for production.
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   api:
     build: ./api
-    container_name: resilience-api
-    restart: always
+    restart: unless-stopped
     ports:
-      - "5010:5000"   # host 5010 -> container 5000
+      - "5010-5012:5000"
     environment:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - GUNICORN_WORKERS=2
+      - GUNICORN_THREADS=4
+    networks:
+      - resilience-net
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/healthz/readiness', timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
     depends_on:
       redis:
         condition: service_healthy
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   frontend:
     build: ./frontend
-    container_name: resilience-frontend
-    restart: always
+    restart: unless-stopped
     ports:
-      - "3010:3000"   # host 3010 -> container 3000
+      - "3010:3000"
     environment:
       - API_URL=http://api:5000
+      - API_TIMEOUT=15
+    networks:
+      - resilience-net
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:3000/healthz/liveness', timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
     depends_on:
-      - api
+      api:
+        condition: service_healthy
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  resilience-net:
+    driver: bridge
