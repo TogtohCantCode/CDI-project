@@ -3,150 +3,172 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Resilience Lab Control Center</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>resilience-lab // telemetry &amp; fault console</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root {
-            --bg-canvas: #0b1120;
-            --card-bg: #111827;
-            --card-inner: #1e293b;
-            --text-primary: #f8fafc;
-            --text-secondary: #94a3b8;
-            --border-color: #1f2937;
-            --status-healthy-bg: rgba(16, 185, 129, 0.12);
-            --status-healthy-border: #10b981;
-            --status-healthy-text: #6ee7b7;
+        * {
+            box-sizing: border-box;
         }
 
         body {
-            background-color: var(--bg-canvas);
-            color: var(--text-primary);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            transition: background-color 0.4s ease;
+            background: #e9e9e4;
+            color: #111111;
+            font-family: Consolas, "Liberation Mono", Menlo, Courier, monospace;
+            font-size: 13px;
+            line-height: 1.35;
+            margin: 0;
+            padding: 10px;
         }
 
-        /* Prominent Health Banner */
+        .container {
+            max-width: 1320px;
+            margin: 0 auto;
+        }
+
+        /* Glowing Status Window */
         .status-banner {
-            border-radius: 14px;
-            padding: 1.25rem 1.75rem;
-            margin-bottom: 1.25rem;
-            border: 2px solid var(--status-healthy-border);
-            background-color: var(--status-healthy-bg);
-            color: var(--status-healthy-text);
-            transition: all 0.4s ease;
+            border: 2px solid #15803d;
+            background: #f0fdf4;
+            padding: 9px 12px;
+            margin-bottom: 8px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 0 12px rgba(22, 163, 74, 0.28);
+            animation: pulse-healthy 3s infinite;
+            transition: background-color 0.25s ease, border-color 0.25s ease;
         }
 
         .status-banner.status-degraded {
-            background-color: rgba(245, 158, 11, 0.14);
-            border-color: #f59e0b;
-            color: #fcd34d;
-            animation: pulse-degraded 2s infinite;
+            background: #fffbeb;
+            border-color: #d97706;
+            animation: pulse-degraded 1.8s infinite;
         }
 
         .status-banner.status-failed {
-            background-color: rgba(239, 68, 68, 0.15);
-            border-color: #ef4444;
-            color: #fca5a5;
-            animation: pulse-failed 1.5s infinite;
+            background: #fef2f2;
+            border-color: #dc2626;
+            animation: pulse-failed 1.2s infinite;
+        }
+
+        @keyframes pulse-healthy {
+            0%, 100% { box-shadow: 0 0 6px rgba(22, 163, 74, 0.22); }
+            50% { box-shadow: 0 0 16px rgba(22, 163, 74, 0.48); }
         }
 
         @keyframes pulse-degraded {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.35); }
-            50% { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
+            0%, 100% { box-shadow: 0 0 6px rgba(217, 119, 6, 0.35); }
+            50% { box-shadow: 0 0 18px rgba(217, 119, 6, 0.75); }
         }
 
         @keyframes pulse-failed {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
-            50% { box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); }
+            0%, 100% { box-shadow: 0 0 8px rgba(220, 38, 38, 0.45); }
+            50% { box-shadow: 0 0 22px rgba(220, 38, 38, 0.9); }
+        }
+
+        .status-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin: 0;
+            text-transform: uppercase;
+        }
+
+        .status-desc {
+            margin: 2px 0 0 0;
+            font-size: 12px;
+            color: #333333;
+        }
+
+        .pill-group {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
         }
 
         .status-pill {
-            font-size: 0.85rem;
-            font-weight: 700;
-            padding: 0.45rem 1.15rem;
-            border-radius: 50rem;
-            letter-spacing: 0.05em;
+            border: 1px solid #111111;
+            padding: 2px 7px;
+            font-size: 11px;
+            font-weight: bold;
+            background: #e5e5e5;
+            color: #111111;
+        }
+
+        .pill-ok { background: #bbf7d0; border-color: #15803d; color: #14532d; }
+        .pill-warn { background: #fde68a; border-color: #b45309; color: #78350f; }
+        .pill-err { background: #fecaca; border-color: #b91c1c; color: #7f1d1d; }
+        .d-none { display: none !important; }
+
+        /* Compact Box Layout */
+        .box {
+            background: #ffffff;
+            border: 1px solid #111111;
+            padding: 9px 10px;
+            margin-bottom: 8px;
+        }
+
+        .box-header {
+            font-weight: bold;
             text-transform: uppercase;
+            font-size: 11px;
+            border-bottom: 1px solid #cccccc;
+            padding-bottom: 4px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
-        .card-custom {
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
-        }
-
-        .inner-panel {
-            background: var(--card-inner);
-            border: 1px solid #334155;
-            border-radius: 10px;
-        }
-
-        .border-top-subtle {
-            border-top: 1px solid #1f2937 !important;
-        }
-
-        .metric-title {
-            font-size: 0.75rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            color: var(--text-secondary);
-        }
-
-        .metric-value-lg {
-            font-size: 1.9rem;
-            font-weight: 800;
-            line-height: 1.2;
-            color: var(--text-primary);
-        }
-
-        .metric-subtext {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-        }
-
-        /* Animated Mailman / Packet Delivery Pipeline */
+        /* Animated Packet / Mail Courier Track */
         .pipeline-track {
             position: relative;
-            height: 44px;
-            background: #0f172a;
-            border: 1px solid #1e293b;
-            border-radius: 10px;
+            height: 36px;
+            background: #f7f7f4;
+            border: 1px solid #888888;
             overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 1rem;
-        }
-
-        .pipeline-node {
-            z-index: 2;
-            background: #1e293b;
-            border: 1px solid #334155;
-            padding: 0.25rem 0.7rem;
-            border-radius: 6px;
-            font-size: 0.78rem;
-            font-weight: 600;
-            color: #e2e8f0;
+            padding: 0 10px;
         }
 
         .pipeline-wire {
             position: absolute;
             left: 10%;
             right: 10%;
-            height: 2px;
-            background: repeating-linear-gradient(90deg, #334155 0, #334155 8px, transparent 8px, transparent 14px);
+            height: 1px;
+            background: repeating-linear-gradient(90deg, #555555 0, #555555 6px, transparent 6px, transparent 11px);
             z-index: 1;
+        }
+
+        .pipeline-node {
+            z-index: 2;
+            border: 1px solid #111111;
+            background: #e5e5e5;
+            padding: 2px 7px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .pipeline-node.pod-switch {
+            background: #dbeafe;
+            border-color: #1d4ed8;
         }
 
         .mailman-courier {
             position: absolute;
-            left: 12%;
+            left: 15%;
             z-index: 3;
-            font-size: 1.25rem;
-            animation: deliver-packet var(--courier-speed, 2.2s) linear infinite;
+            background: #ffffff;
+            border: 1px solid #111111;
+            padding: 1px 6px;
+            font-size: 11px;
+            font-weight: bold;
+            color: #15803d;
+            white-space: nowrap;
+            animation: deliver-packet var(--courier-speed, 2.0s) linear infinite;
         }
 
         .mailman-courier.paused {
@@ -154,263 +176,367 @@
         }
 
         @keyframes deliver-packet {
-            0%   { left: 12%; transform: scaleX(1); }
-            48%  { left: 82%; transform: scaleX(1); }
-            50%  { left: 82%; transform: scaleX(-1); }
-            98%  { left: 12%; transform: scaleX(-1); }
-            100% { left: 12%; transform: scaleX(1); }
+            0%   { left: 15%; }
+            48%  { left: 76%; }
+            50%  { left: 76%; }
+            98%  { left: 15%; }
+            100% { left: 15%; }
         }
 
-        .console-box {
-            background: #060b16;
-            color: #38bdf8;
-            border: 1px solid #1e293b;
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-            font-size: 0.82rem;
-            height: 220px;
-            overflow-y: auto;
-            border-radius: 8px;
-            line-height: 1.5;
+        /* Tight 4-Column Metric Grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        @media (max-width: 900px) {
+            .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (max-width: 520px) {
+            .metrics-grid { grid-template-columns: 1fr; }
+        }
+
+        .metric-card {
+            background: #ffffff;
+            border: 1px solid #111111;
+            padding: 8px 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .metric-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            color: #444444;
+            text-transform: uppercase;
+            margin-bottom: 3px;
+        }
+
+        .metric-value-lg {
+            font-size: 22px;
+            font-weight: bold;
+            font-variant-numeric: tabular-nums;
+            margin: 2px 0;
+        }
+
+        .metric-footer {
+            border-top: 1px solid #e0e0e0;
+            padding-top: 4px;
+            margin-top: 6px;
+            font-size: 11px;
+            color: #444444;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Main Two-Column Split */
+        .two-col {
+            display: grid;
+            grid-template-columns: 1.45fr 1fr;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        @media (max-width: 900px) {
+            .two-col { grid-template-columns: 1fr; }
         }
 
         .chart-wrapper {
             position: relative;
-            height: 240px;
+            height: 225px;
             width: 100%;
         }
 
-        .table-dark-custom {
-            --bs-table-bg: transparent;
-            --bs-table-color: #e2e8f0;
-            --bs-table-border-color: #1f2937;
-            --bs-table-hover-bg: rgba(255, 255, 255, 0.04);
+        /* Raw Controls */
+        .active-chaos-bar {
+            background: #f4f4f0;
+            border: 1px solid #999999;
+            padding: 4px 8px;
+            margin-bottom: 8px;
+            font-size: 11px;
+            display: flex;
+            justify-content: space-between;
         }
 
-        .badge-soft-primary { background: rgba(56, 189, 248, 0.16); color: #38bdf8; }
-        .badge-soft-success { background: rgba(16, 185, 129, 0.16); color: #34d399; }
-        .badge-soft-warning { background: rgba(245, 158, 11, 0.18); color: #fbbf24; }
-        .badge-soft-danger  { background: rgba(239, 68, 68, 0.18); color: #f87171; }
+        .control-group {
+            border: 1px solid #cccccc;
+            background: #f9f9f7;
+            padding: 7px 9px;
+            margin-bottom: 8px;
+        }
 
-        .btn-chaos-apply { background-color: #2563eb; color: #fff; font-weight: 600; border: none; }
-        .btn-chaos-apply:hover { background-color: #1d4ed8; color: #fff; }
-        .btn-chaos-spike { background-color: #dc2626; color: #fff; font-weight: 600; border: none; }
-        .btn-chaos-spike:hover { background-color: #b91c1c; color: #fff; }
+        .control-label-row {
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            margin: 2px 0;
+            cursor: pointer;
+        }
+
+        .range-ticks {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            color: #555555;
+        }
+
+        .btn-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+
+        button {
+            font-family: inherit;
+            font-size: 11px;
+            font-weight: bold;
+            padding: 6px 8px;
+            border: 1px solid #111111;
+            background: #e5e5e5;
+            color: #111111;
+            cursor: pointer;
+        }
+
+        button:hover { background: #d4d4d4; }
+        button:active { background: #bdbdbd; }
+
+        .btn-primary {
+            background: #111111;
+            color: #ffffff;
+        }
+
+        .btn-primary:hover { background: #2e2e2e; }
+
+        .btn-danger {
+            background: #fee2e2;
+            border-color: #991b1b;
+            color: #991b1b;
+        }
+
+        .btn-danger:hover { background: #fecaca; }
+
+        /* Terminal Log & Plain HTML Table */
+        .console-box {
+            background: #111111;
+            color: #e5e5e5;
+            border: 1px solid #111111;
+            font-size: 11.5px;
+            height: 195px;
+            overflow-y: auto;
+            padding: 7px 9px;
+            line-height: 1.45;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11.5px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        th, td {
+            border: 1px solid #cccccc;
+            padding: 4px 7px;
+            text-align: left;
+        }
+
+        th {
+            background: #eeeeee;
+            font-weight: bold;
+        }
     </style>
 </head>
-<body class="py-4">
-    <div class="container-fluid px-4" style="max-width: 1400px;">
+<body>
+    <div class="container">
 
-        <!-- PROMINENT SYSTEM HEALTH BANNER -->
-        <div id="system-status-banner" class="status-banner d-flex flex-wrap justify-content-between align-items-center gap-3">
-            <div class="d-flex align-items-center gap-3">
-                <div id="status-icon" style="font-size: 2rem;">✅</div>
-                <div>
-                    <h2 id="status-title" class="fw-bold mb-0 h4">System Status: Operational</h2>
-                    <p id="status-desc" class="mb-0 small opacity-75">All resilience thresholds within normal baseline parameters.</p>
-                </div>
+        <!-- GLOWING SYSTEM STATUS HEADER -->
+        <div id="system-status-banner" class="status-banner">
+            <div>
+                <h1 id="status-title" class="status-title">[OK] SYSTEM STATUS: OPERATIONAL</h1>
+                <p id="status-desc" class="status-desc">All backend services &amp; chaos indicators within normal operating parameters.</p>
             </div>
-            <div class="d-flex align-items-center gap-2 flex-wrap">
-                <span id="stale-badge" class="status-pill bg-warning text-dark d-none">STALE CACHE</span>
-                <span id="cb-badge" class="status-pill bg-secondary text-white">CB: CLOSED</span>
-                <span id="status-badge" class="status-pill bg-success text-white">HEALTHY</span>
+            <div class="pill-group">
+                <span id="stale-badge" class="status-pill pill-warn d-none">STALE_CACHE=TRUE</span>
+                <span id="cb-badge" class="status-pill">CB: CLOSED</span>
+                <span id="status-badge" class="status-pill pill-ok">HEALTHY</span>
             </div>
         </div>
 
-        <!-- LIVE REQUEST COURIER / MAILMAN PIPELINE -->
-        <div class="card-custom p-3 mb-4">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-                <span class="metric-title">Live BFF &rarr; API &rarr; Redis Request Flow</span>
-                <span id="courier-status-text" class="metric-subtext">Courier active — nominal round-trip</span>
+        <!-- ANIMATED MAIL / PACKET PIPELINE -->
+        <div class="box">
+            <div class="box-header">
+                <span>Live Request Courier // BFF &rarr; API &rarr; Redis</span>
+                <span id="courier-status-text">nominal round-trip</span>
             </div>
             <div class="pipeline-track">
                 <div class="pipeline-wire"></div>
-                <div class="pipeline-node">🌐 Frontend BFF</div>
-                <div id="mailman-icon" class="mailman-courier" title="Active Request Packet">🏃‍♂️✉️</div>
-                <div class="pipeline-node">⚙️ API Pod (<span id="pipeline-pod-id">-</span>)</div>
-                <div class="pipeline-node">🗄️ Redis State</div>
+                <span class="pipeline-node">FRONTEND_BFF</span>
+                <span id="mailman-icon" class="mailman-courier">[MAIL: 200 OK]</span>
+                <span id="pipeline-pod-node" class="pipeline-node">API_POD (<span id="pipeline-pod-id">-</span>)</span>
+                <span class="pipeline-node">REDIS_STATE</span>
             </div>
         </div>
 
-        <!-- TOP METRICS ROW -->
-        <div class="row g-3 mb-4">
-
-            <!-- 1. TRAFFIC VOLUME -->
-            <div class="col-xl-3 col-md-6">
-                <div class="card-custom p-3 h-100 d-flex flex-column justify-content-between">
-                    <div>
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <span class="metric-title">Traffic Volume &amp; Rate</span>
-                            <span id="attempts-badge" class="badge badge-soft-primary">1 try</span>
-                        </div>
-                        <div class="d-flex align-items-baseline gap-2">
-                            <div id="metric-requests-total" class="metric-value-lg">0</div>
-                            <span class="metric-subtext">total requests</span>
-                        </div>
+        <!-- 4 METRIC BOXES -->
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div>
+                    <div class="metric-top">
+                        <span>Traffic Volume</span>
+                        <span id="attempts-badge">[1 try]</span>
                     </div>
-                    <div class="pt-2 border-top-subtle mt-2 d-flex justify-content-between align-items-center">
-                        <div>
-                            <span class="metric-subtext">Throughput:</span>
-                            <span id="metric-requests-rate" class="fw-bold text-info ms-1">0.0 req/s</span>
-                        </div>
-                        <div style="width: 70px; height: 24px;">
-                            <canvas id="reqSparkline"></canvas>
-                        </div>
-                    </div>
+                    <div id="metric-requests-total" class="metric-value-lg">0</div>
+                </div>
+                <div class="metric-footer">
+                    <span>Rate: <strong id="metric-requests-rate">0.0 req/s</strong></span>
+                    <div style="width: 60px; height: 18px;"><canvas id="reqSparkline"></canvas></div>
                 </div>
             </div>
 
-            <!-- 2. LATENCY -->
-            <div class="col-xl-3 col-md-6">
-                <div class="card-custom p-3 h-100 d-flex flex-column justify-content-between">
-                    <div>
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <span class="metric-title">Response Latency</span>
-                            <span id="latency-status-tag" class="badge badge-soft-success">Normal</span>
-                        </div>
-                        <div id="metric-latency" class="metric-value-lg text-info">0 ms</div>
+            <div class="metric-card">
+                <div>
+                    <div class="metric-top">
+                        <span>Response Latency</span>
+                        <span id="latency-status-tag">[OK]</span>
                     </div>
-                    <div class="pt-2 border-top-subtle mt-2 d-flex justify-content-between align-items-center">
-                        <span class="metric-subtext">Target: &lt; 500 ms</span>
-                        <span id="latency-trend" class="small fw-semibold text-success">✓ Optimal</span>
-                    </div>
+                    <div id="metric-latency" class="metric-value-lg">0 ms</div>
+                </div>
+                <div class="metric-footer">
+                    <span>SLA: &lt; 500ms</span>
+                    <span id="latency-trend">OPTIMAL</span>
                 </div>
             </div>
 
-            <!-- 3. CPU LOAD -->
-            <div class="col-xl-3 col-md-6">
-                <div class="card-custom p-3 h-100 d-flex flex-column justify-content-between">
+            <div class="metric-card">
+                <div>
+                    <div class="metric-top">
+                        <span>Backend CPU</span>
+                        <span id="cpu-spike-tag">[NORMAL]</span>
+                    </div>
                     <div>
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <span class="metric-title">Backend CPU Load</span>
-                            <span id="cpu-spike-tag" class="badge badge-soft-primary">Normal</span>
-                        </div>
-                        <div class="d-flex align-items-baseline gap-2">
-                            <div id="metric-cpu" class="metric-value-lg">0%</div>
-                            <span id="metric-cores" class="metric-subtext">(1 vCPU)</span>
-                        </div>
+                        <span id="metric-cpu" class="metric-value-lg">0%</span>
+                        <span id="metric-cores" style="font-size: 11px; color: #555;">(1 vCPU)</span>
                     </div>
-                    <div class="pt-2 border-top-subtle mt-2 d-flex justify-content-between align-items-center">
-                        <span class="metric-subtext">Spike Engine:</span>
-                        <span id="metric-cpu-spike" class="fw-bold text-secondary">INACTIVE</span>
-                    </div>
+                </div>
+                <div class="metric-footer">
+                    <span>Burn Worker:</span>
+                    <strong id="metric-cpu-spike">INACTIVE</strong>
                 </div>
             </div>
 
-            <!-- 4. RAM USAGE -->
-            <div class="col-xl-3 col-md-6">
-                <div class="card-custom p-3 h-100 d-flex flex-column justify-content-between">
-                    <div>
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <span class="metric-title">Container RAM Usage</span>
-                            <span class="badge badge-soft-primary">Cgroup</span>
-                        </div>
-                        <div id="metric-ram" class="metric-value-lg">0%</div>
+            <div class="metric-card">
+                <div>
+                    <div class="metric-top">
+                        <span>Container RAM</span>
+                        <span>[CGROUP_V2]</span>
                     </div>
-                    <div class="pt-2 border-top-subtle mt-2 d-flex justify-content-between align-items-center">
-                        <span class="metric-subtext">Served by Pod:</span>
-                        <span id="metric-host" class="font-monospace small text-info text-truncate" style="max-width: 120px;">-</span>
-                    </div>
+                    <div id="metric-ram" class="metric-value-lg">0%</div>
+                </div>
+                <div class="metric-footer">
+                    <span>Served By:</span>
+                    <strong id="metric-host" style="max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">-</strong>
                 </div>
             </div>
         </div>
 
-        <!-- MIDDLE ROW: LIVE CHART + CHAOS CONTROLLER -->
-        <div class="row g-3 mb-4">
-            <!-- LIVE CHART (col-7) -->
-            <div class="col-lg-7">
-                <div class="card-custom p-4 h-100">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div>
-                            <h5 class="fw-bold mb-0">Telemetry Performance Trends</h5>
-                            <span class="metric-subtext">Real-time Cgroup CPU, RAM, and Proxy Latency monitoring</span>
-                        </div>
-                        <span class="badge bg-dark text-light border border-secondary">Interval: 2s</span>
-                    </div>
-                    <div class="chart-wrapper">
-                        <canvas id="performanceChart"></canvas>
-                    </div>
+        <!-- CHART + CHAOS CONTROLS -->
+        <div class="two-col">
+            <div class="box" style="margin-bottom: 0;">
+                <div class="box-header">
+                    <span>Live Telemetry Plot (2s poll)</span>
+                    <span>CPU% / RAM% / MS</span>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="performanceChart"></canvas>
                 </div>
             </div>
 
-            <!-- CHAOS CONTROL PANEL (col-5) -->
-            <div class="col-lg-5">
-                <div class="card-custom p-4 h-100">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div>
-                            <h5 class="fw-bold text-danger mb-0">⚡ Chaos Engineering Injector</h5>
-                            <span class="metric-subtext">Simulate service degradation &amp; node failures</span>
-                        </div>
-                        <button class="btn btn-sm btn-outline-light" onclick="resetChaos()">↺ Reset Baseline</button>
-                    </div>
+            <div class="box" style="margin-bottom: 0;">
+                <div class="box-header">
+                    <span>Fault Injection Controls</span>
+                    <button type="button" onclick="resetChaos()" title="Shortcut: Press R" style="padding: 2px 7px;">RESET [R]</button>
+                </div>
 
-                    <div class="mb-3 p-3 inner-panel">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <label class="form-label fw-semibold mb-0 small">Injected Latency Delay:</label>
-                            <span id="lat-val" class="badge bg-primary">0.0s</span>
-                        </div>
-                        <input type="range" class="form-range" id="chaos-latency" min="0" max="10" step="0.5" value="0" oninput="document.getElementById('lat-val').innerText = this.value + 's'">
-                        <div class="d-flex justify-content-between metric-subtext" style="font-size: 0.75rem;">
-                            <span>0s (None)</span>
-                            <span>5.0s (Degraded)</span>
-                            <span>10.0s (Severe)</span>
-                        </div>
-                    </div>
+                <div class="active-chaos-bar">
+                    <span>ACTIVE REDIS STATE:</span>
+                    <strong id="active-chaos-summary">lat=0.0s | err=0% | burn=OFF</strong>
+                </div>
 
-                    <div class="mb-3 p-3 inner-panel">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <label class="form-label fw-semibold mb-0 small">Artificial Error Failure Rate (%):</label>
-                            <span id="err-val" class="badge bg-danger">0%</span>
-                        </div>
-                        <input type="range" class="form-range" id="chaos-error" min="0" max="100" step="10" value="0" oninput="document.getElementById('err-val').innerText = this.value + '%'">
-                        <div class="d-flex justify-content-between metric-subtext" style="font-size: 0.75rem;">
-                            <span>0% (Stable)</span>
-                            <span>50% (Flaky)</span>
-                            <span>100% (Outage)</span>
-                        </div>
+                <div class="control-group">
+                    <div class="control-label-row">
+                        <label for="chaos-latency">Injected Latency Delay:</label>
+                        <span id="lat-val">0.0s</span>
                     </div>
+                    <input type="range" id="chaos-latency" min="0" max="10" step="0.5" value="0" oninput="document.getElementById('lat-val').innerText = parseFloat(this.value).toFixed(1) + 's'">
+                    <div class="range-ticks">
+                        <span>0.0s</span>
+                        <span>5.0s</span>
+                        <span>10.0s</span>
+                    </div>
+                </div>
 
-                    <div class="row g-2">
-                        <div class="col-6">
-                            <button class="btn btn-chaos-apply w-100 py-2" onclick="applyChaos(false)">Apply Chaos Parameters</button>
-                        </div>
-                        <div class="col-6">
-                            <button class="btn btn-chaos-spike w-100 py-2" onclick="applyChaos(true)">🔥 Trigger CPU Burn</button>
-                        </div>
+                <div class="control-group">
+                    <div class="control-label-row">
+                        <label for="chaos-error">HTTP 500 Error Rate (%):</label>
+                        <span id="err-val">0%</span>
                     </div>
+                    <input type="range" id="chaos-error" min="0" max="100" step="10" value="0" oninput="document.getElementById('err-val').innerText = this.value + '%'">
+                    <div class="range-ticks">
+                        <span>0%</span>
+                        <span>50%</span>
+                        <span>100%</span>
+                    </div>
+                </div>
+
+                <div class="btn-row">
+                    <button type="button" class="btn-primary" onclick="applyChaos(false)">APPLY CHAOS</button>
+                    <button type="button" class="btn-danger" onclick="applyChaos(true)">TRIGGER CPU BURN</button>
                 </div>
             </div>
         </div>
 
-        <!-- BOTTOM ROW: CONSOLE LOG + EXPERIMENT HISTORY -->
-        <div class="row g-3">
-            <div class="col-lg-7">
-                <div class="card-custom p-4 h-100">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h5 class="fw-bold mb-0">🖥️ Live Operational Activity Stream</h5>
-                        <button class="btn btn-sm btn-link text-secondary text-decoration-none" onclick="document.getElementById('console-log').innerHTML=''">Clear Stream</button>
-                    </div>
-                    <div id="console-log" class="console-box p-3">System initialized. Listening for API proxy events...</div>
+        <!-- LOG STREAM + EXPERIMENT HISTORY -->
+        <div class="two-col" style="margin-bottom: 0;">
+            <div class="box" style="margin-bottom: 0;">
+                <div class="box-header">
+                    <span>stdout // proxy event log</span>
+                    <button type="button" onclick="document.getElementById('console-log').innerHTML=''" style="padding: 2px 7px;">CLEAR</button>
                 </div>
+                <div id="console-log" class="console-box">System initialized. Listening for /proxy/stats events...</div>
             </div>
 
-            <div class="col-lg-5">
-                <div class="card-custom p-4 h-100">
-                    <h5 class="fw-bold mb-2">📜 Recent Chaos Experiments Log</h5>
-                    <div class="table-responsive" style="max-height: 220px;">
-                        <table class="table table-sm table-dark-custom table-hover align-middle mb-0" style="font-size: 0.85rem;">
-                            <thead>
-                                <tr class="text-secondary">
-                                    <th>Timestamp</th>
-                                    <th>Latency</th>
-                                    <th>Error %</th>
-                                    <th>CPU Spike</th>
-                                </tr>
-                            </thead>
-                            <tbody id="history-table-body">
-                                <tr><td colspan="4" class="text-secondary text-center py-3">No experiments logged yet.</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
+            <div class="box" style="margin-bottom: 0;">
+                <div class="box-header">
+                    <span>Chaos Experiment History</span>
+                    <span>SESSION</span>
+                </div>
+                <div style="max-height: 195px; overflow-y: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Latency</th>
+                                <th>Error %</th>
+                                <th>CPU Spike</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-table-body">
+                            <tr><td colspan="4" style="text-align: center; color: #666;">No experiments logged yet.</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -427,34 +553,31 @@
                 labels: Array(MAX_DATA_POINTS).fill(''),
                 datasets: [
                     {
-                        label: 'CPU Usage (%)',
+                        label: 'CPU (%)',
                         data: Array(MAX_DATA_POINTS).fill(0),
-                        borderColor: '#38bdf8',
-                        backgroundColor: 'rgba(56, 189, 248, 0.12)',
-                        fill: true,
-                        tension: 0.3,
-                        borderWidth: 2,
-                        pointRadius: 0
+                        borderColor: '#0284c7',
+                        fill: false,
+                        tension: 0,
+                        borderWidth: 1.5,
+                        pointRadius: 2
                     },
                     {
-                        label: 'RAM Usage (%)',
+                        label: 'RAM (%)',
                         data: Array(MAX_DATA_POINTS).fill(0),
-                        borderColor: '#a78bfa',
-                        backgroundColor: 'rgba(167, 139, 250, 0.08)',
-                        fill: true,
-                        tension: 0.3,
-                        borderWidth: 2,
-                        pointRadius: 0
+                        borderColor: '#16a34a',
+                        fill: false,
+                        tension: 0,
+                        borderWidth: 1.5,
+                        pointRadius: 2
                     },
                     {
                         label: 'Latency (ms)',
                         data: Array(MAX_DATA_POINTS).fill(0),
-                        borderColor: '#fbbf24',
-                        backgroundColor: 'rgba(251, 191, 36, 0.08)',
-                        fill: true,
-                        tension: 0.3,
-                        borderWidth: 2,
-                        pointRadius: 0,
+                        borderColor: '#dc2626',
+                        fill: false,
+                        tension: 0,
+                        borderWidth: 1.5,
+                        pointRadius: 2,
                         yAxisID: 'y1'
                     }
                 ]
@@ -462,12 +585,13 @@
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                animation: false,
                 interaction: { intersect: false, mode: 'index' },
                 plugins: {
                     legend: {
                         display: true,
                         position: 'top',
-                        labels: { color: '#cbd5e1', boxWidth: 12, usePointStyle: true }
+                        labels: { color: '#111111', boxWidth: 10, font: { family: 'Consolas, monospace', size: 11 } }
                     }
                 },
                 scales: {
@@ -475,16 +599,16 @@
                     y: {
                         beginAtZero: true,
                         max: 100,
-                        ticks: { color: '#94a3b8' },
-                        grid: { color: '#1e293b' },
-                        title: { display: true, text: 'Utilization %', color: '#94a3b8' }
+                        ticks: { color: '#333333', font: { family: 'Consolas, monospace', size: 11 } },
+                        grid: { color: '#e5e5e5' },
+                        title: { display: true, text: 'UTIL %', color: '#333333', font: { family: 'Consolas, monospace', size: 11 } }
                     },
                     y1: {
                         beginAtZero: true,
                         position: 'right',
-                        ticks: { color: '#fbbf24' },
+                        ticks: { color: '#dc2626', font: { family: 'Consolas, monospace', size: 11 } },
                         grid: { display: false },
-                        title: { display: true, text: 'Latency (ms)', color: '#fbbf24' }
+                        title: { display: true, text: 'LATENCY (MS)', color: '#dc2626', font: { family: 'Consolas, monospace', size: 11 } }
                     }
                 }
             }
@@ -497,15 +621,17 @@
                 labels: Array(10).fill(''),
                 datasets: [{
                     data: Array(10).fill(0),
-                    borderColor: '#38bdf8',
-                    borderWidth: 2,
+                    borderColor: '#111111',
+                    borderWidth: 1.2,
                     pointRadius: 0,
-                    fill: false
+                    fill: false,
+                    tension: 0
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                animation: false,
                 plugins: { legend: { display: false }, tooltip: { enabled: false } },
                 scales: { x: { display: false }, y: { display: false } }
             }
@@ -513,12 +639,14 @@
 
         let prevRequests = 0;
         let lastFetchTime = Date.now();
+        let lastPodHost = '';
 
         function log(msg, type = 'info') {
             const consoleBox = document.getElementById('console-log');
             const time = new Date().toLocaleTimeString();
-            const color = type === 'error' ? '#f87171' : type === 'warn' ? '#fbbf24' : '#4ade80';
-            consoleBox.innerHTML = `<div><span style="color:#64748b">[${time}]</span> <span style="color:${color}">${msg}</span></div>` + consoleBox.innerHTML;
+            const color = type === 'error' ? '#f87171' : type === 'warn' ? '#facc15' : '#4ade80';
+            const prefix = type === 'error' ? 'ERR' : type === 'warn' ? 'WRN' : 'INF';
+            consoleBox.innerHTML = `<div><span style="color:#888888">${time}</span> <span style="color:${color}">[${prefix}]</span> ${msg}</div>` + consoleBox.innerHTML;
             consoleBox.scrollTop = 0;
         }
 
@@ -527,22 +655,28 @@
             const statusText = document.getElementById('courier-status-text');
 
             if (state === 'failed') {
-                mailman.innerText = '🛡️🚫';
+                mailman.innerText = '[MAIL: X BLOCKED]';
+                mailman.style.color = '#b91c1c';
+                mailman.style.borderColor = '#b91c1c';
                 mailman.classList.add('paused');
-                statusText.innerText = 'Circuit / Upstream Fault — packet delivery blocked';
-                statusText.className = 'small text-danger fw-semibold';
+                statusText.innerText = 'CIRCUIT OPEN / UPSTREAM FAULT';
+                statusText.style.color = '#b91c1c';
             } else if (state === 'degraded') {
-                mailman.innerText = '🐢📦';
+                mailman.innerText = '[MAIL: SLOW]';
+                mailman.style.color = '#b45309';
+                mailman.style.borderColor = '#b45309';
                 mailman.classList.remove('paused');
                 mailman.style.setProperty('--courier-speed', '5.5s');
-                statusText.innerText = `High latency / load (${latencyMs}ms) — courier throttled`;
-                statusText.className = 'small text-warning fw-semibold';
+                statusText.innerText = `DEGRADED (${latencyMs}ms)`;
+                statusText.style.color = '#b45309';
             } else {
-                mailman.innerText = '🏃‍♂️✉️';
+                mailman.innerText = '[MAIL: 200 OK]';
+                mailman.style.color = '#15803d';
+                mailman.style.borderColor = '#15803d';
                 mailman.classList.remove('paused');
                 mailman.style.setProperty('--courier-speed', '2.0s');
-                statusText.innerText = `Courier active — nominal round-trip (${latencyMs}ms)`;
-                statusText.className = 'metric-subtext';
+                statusText.innerText = `OK (${latencyMs}ms)`;
+                statusText.style.color = '#15803d';
             }
         }
 
@@ -553,11 +687,11 @@
 
             cbBadge.innerText = `CB: ${cbState}`;
             if (cbState === 'OPEN') {
-                cbBadge.className = 'status-pill bg-danger text-white';
+                cbBadge.className = 'status-pill pill-err';
             } else if (cbState === 'HALF_OPEN') {
-                cbBadge.className = 'status-pill bg-warning text-dark';
+                cbBadge.className = 'status-pill pill-warn';
             } else {
-                cbBadge.className = 'status-pill bg-secondary text-white';
+                cbBadge.className = 'status-pill';
             }
 
             if (data.stale) {
@@ -572,29 +706,25 @@
             const badge = document.getElementById('status-badge');
             const title = document.getElementById('status-title');
             const descEl = document.getElementById('status-desc');
-            const icon = document.getElementById('status-icon');
 
             if (status === 'healthy') {
-                banner.className = 'status-banner d-flex flex-wrap justify-content-between align-items-center gap-3';
-                badge.className = 'status-pill bg-success text-white';
+                banner.className = 'status-banner';
+                badge.className = 'status-pill pill-ok';
                 badge.innerText = 'HEALTHY';
-                title.innerText = 'System Status: Operational';
+                title.innerText = '[OK] SYSTEM STATUS: OPERATIONAL';
                 descEl.innerText = desc || 'All backend services & chaos indicators within normal operating parameters.';
-                icon.innerText = '✅';
             } else if (status === 'degraded') {
-                banner.className = 'status-banner status-degraded d-flex flex-wrap justify-content-between align-items-center gap-3';
-                badge.className = 'status-pill bg-warning text-dark';
+                banner.className = 'status-banner status-degraded';
+                badge.className = 'status-pill pill-warn';
                 badge.innerText = 'DEGRADED';
-                title.innerText = 'System Status: Performance Degraded';
+                title.innerText = '[WARN] SYSTEM STATUS: PERFORMANCE DEGRADED';
                 descEl.innerText = desc || 'High latency or elevated CPU burn detected on backend nodes.';
-                icon.innerText = '⚠️';
             } else {
-                banner.className = 'status-banner status-failed d-flex flex-wrap justify-content-between align-items-center gap-3';
-                badge.className = 'status-pill bg-danger text-white';
-                badge.innerText = 'OUTAGE / FAILURE';
-                title.innerText = 'System Status: Service Outage';
-                descEl.innerText = desc || 'Backend requests timing out or returning critical HTTP 500 errors!';
-                icon.innerText = '🚨';
+                banner.className = 'status-banner status-failed';
+                badge.className = 'status-pill pill-err';
+                badge.innerText = 'OUTAGE';
+                title.innerText = '[FAIL] SYSTEM STATUS: SERVICE OUTAGE';
+                descEl.innerText = desc || 'Backend requests timing out or returning critical HTTP 500 errors.';
             }
         }
 
@@ -609,7 +739,7 @@
                 if (res.ok) {
                     const totalReqs = data.total_requests;
                     document.getElementById('metric-requests-total').innerText = totalReqs;
-                    document.getElementById('attempts-badge').innerText = `${data.attempts || 1} try`;
+                    document.getElementById('attempts-badge').innerText = `[${data.attempts || 1} try]`;
 
                     if (prevRequests > 0 && typeof totalReqs === 'number') {
                         const deltaReq = totalReqs - prevRequests;
@@ -631,36 +761,45 @@
 
                     const chaosCfg = data.chaos_config || {};
                     const isSpiking = Boolean(chaosCfg.cpu_spike || data.cpu_spike);
+                    const activeLat = parseFloat(chaosCfg.latency || 0).toFixed(1);
+                    const activeErr = parseInt(chaosCfg.error_rate || 0, 10);
+                    document.getElementById('active-chaos-summary').innerText = `lat=${activeLat}s | err=${activeErr}% | burn=${isSpiking ? 'ON' : 'OFF'}`;
+
                     document.getElementById('metric-cpu-spike').innerText = isSpiking ? 'ACTIVE' : 'INACTIVE';
-                    document.getElementById('metric-cpu-spike').className = isSpiking ? 'fw-bold text-danger' : 'fw-bold text-secondary';
-                    document.getElementById('cpu-spike-tag').className = isSpiking ? 'badge badge-soft-danger' : 'badge badge-soft-primary';
-                    document.getElementById('cpu-spike-tag').innerText = isSpiking ? 'High Load' : 'Normal';
+                    document.getElementById('metric-cpu-spike').style.color = isSpiking ? '#b91c1c' : '#555555';
+                    document.getElementById('cpu-spike-tag').innerText = isSpiking ? '[HIGH LOAD]' : '[NORMAL]';
 
                     const host = data.hostname || 'localhost';
                     document.getElementById('metric-host').innerText = host;
                     document.getElementById('pipeline-pod-id').innerText = host.slice(0, 12);
 
+                    if (lastPodHost && lastPodHost !== host) {
+                        const podNode = document.getElementById('pipeline-pod-node');
+                        podNode.classList.add('pod-switch');
+                        setTimeout(() => podNode.classList.remove('pod-switch'), 600);
+                    }
+                    lastPodHost = host;
+
                     const highLatency = data.response_time_ms > 1500;
                     const highCpu = data.cpu_usage_pct > 80;
 
-                    if (highLatency || highCpu || isSpiking) {
+                    if (data.stale || data.circuit_state === 'OPEN') {
+                        updateSystemHealth('failed', 'Circuit breaker open — serving last known stale cache snapshot.');
+                        updateCourierAnimation('failed', data.response_time_ms);
+                    } else if (highLatency || highCpu || isSpiking) {
                         const reasons = [];
-                        if (highLatency) reasons.push(`Latency ${data.response_time_ms}ms`);
-                        if (highCpu) reasons.push(`CPU Load ${data.cpu_usage_pct}%`);
-                        if (isSpiking) reasons.push(`Multi-Core CPU Burn Active`);
-                        updateSystemHealth('degraded', `System performance degraded: ${reasons.join(' | ')}`);
+                        if (highLatency) reasons.push(`Latency=${data.response_time_ms}ms`);
+                        if (highCpu) reasons.push(`CPU=${data.cpu_usage_pct}%`);
+                        if (isSpiking) reasons.push(`CPU_BURN=ON`);
+                        updateSystemHealth('degraded', `Degraded: ${reasons.join(', ')}`);
                         updateCourierAnimation('degraded', data.response_time_ms);
-                        document.getElementById('latency-status-tag').className = 'badge badge-soft-warning';
-                        document.getElementById('latency-status-tag').innerText = 'Elevated';
-                        document.getElementById('latency-trend').className = 'small fw-semibold text-warning';
-                        document.getElementById('latency-trend').innerText = '⚠️ Slow';
+                        document.getElementById('latency-status-tag').innerText = '[ELEVATED]';
+                        document.getElementById('latency-trend').innerText = 'SLOW';
                     } else {
                         updateSystemHealth('healthy');
                         updateCourierAnimation('healthy', data.response_time_ms);
-                        document.getElementById('latency-status-tag').className = 'badge badge-soft-success';
-                        document.getElementById('latency-status-tag').innerText = 'Normal';
-                        document.getElementById('latency-trend').className = 'small fw-semibold text-success';
-                        document.getElementById('latency-trend').innerText = '✓ Optimal';
+                        document.getElementById('latency-status-tag').innerText = '[OK]';
+                        document.getElementById('latency-trend').innerText = 'OPTIMAL';
                     }
 
                     chart.data.datasets[0].data.push(data.cpu_usage_pct);
@@ -672,87 +811,68 @@
                     chart.update('none');
 
                     if (data.response_time_ms > 500) {
-                        log(`HTTP 200 OK [${host.slice(0, 8)}] - Latency delay: ${data.response_time_ms}ms`, 'warn');
+                        log(`HTTP 200 [${host.slice(0, 8)}] latency=${data.response_time_ms}ms`, 'warn');
                     }
                 } else {
-                    updateSystemHealth('failed', `Backend Service Error: HTTP ${res.status} — ${data.error || ''}`);
-                    updateCourierAnimation('failed', data.response_time_ms || 0);
-                    log(`HTTP ${res.status} [CB=${data.circuit_state || 'OPEN'}] - ${data.error || 'Request failed'}`, 'error');
+                    updateSystemHealth('failed', `Backend Service Error: HTTP ${res.status}`);
+                    updateCourierAnimation('failed', 0);
+                    log(`HTTP ${res.status} Error from upstream API`, 'error');
                 }
             } catch (err) {
-                updateSystemHealth('failed', `Network Connection Outage: Unable to reach /proxy/stats API endpoint.`);
+                updateSystemHealth('failed', 'Frontend proxy unreachable — network connection lost.');
                 updateCourierAnimation('failed', 0);
-                log(`Network Connection Error: ${err}`, 'error');
+                log(`Proxy fetch error: ${err.message}`, 'error');
             }
         }
 
-        async function fetchHistory() {
-            try {
-                const res = await fetch('/proxy/chaos/history');
-                const data = await res.json();
-                const tbody = document.getElementById('history-table-body');
-
-                if (res.ok && data.history && data.history.length > 0) {
-                    tbody.innerHTML = data.history.slice(0, 10).map(item => {
-                        const dateStr = item.ts ? new Date(item.ts * 1000).toLocaleTimeString() : 'Just now';
-                        const spikeBadge = item.cpu_spike
-                            ? '<span class="badge bg-danger">ON</span>'
-                            : '<span class="badge bg-secondary">OFF</span>';
-                        return `
-                            <tr>
-                                <td class="font-monospace">${dateStr}</td>
-                                <td>${item.latency_seconds || 0}s</td>
-                                <td>${item.error_rate_pct || 0}%</td>
-                                <td>${spikeBadge}</td>
-                            </tr>
-                        `;
-                    }).join('');
-                }
-            } catch (err) {
-                // Ignore background history fetch errors silently
-            }
-        }
-
-        async function applyChaos(cpuSpike = false) {
-            const latency = document.getElementById('chaos-latency').value;
-            const errorRate = document.getElementById('chaos-error').value;
-            log(`Triggering Chaos Injection: Latency=${latency}s, ErrorRate=${errorRate}%, Spike=${cpuSpike}`, 'warn');
+        async function applyChaos(triggerSpike) {
+            const latency = parseFloat(document.getElementById('chaos-latency').value);
+            const errorRate = parseInt(document.getElementById('chaos-error').value, 10);
 
             try {
-                const res = await fetch('/proxy/chaos', {
+                await fetch('/proxy/chaos', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ latency, error_rate: errorRate, cpu_spike: cpuSpike })
+                    body: JSON.stringify({ latency, error_rate: errorRate, cpu_spike: triggerSpike })
                 });
-                const data = await res.json();
-                log(`Chaos Engine Updated: ${data.message || 'Success'}`, 'warn');
-                fetchHistory();
-            } catch (e) {
-                log(`Chaos Update Failed: ${e}`, 'error');
+                log(`Chaos applied: latency=${latency}s error_rate=${errorRate}% cpu_spike=${triggerSpike}`, 'warn');
+
+                const tbody = document.getElementById('history-table-body');
+                if (tbody.querySelector('td[colspan="4"]')) tbody.innerHTML = '';
+                const row = `<tr>
+                    <td>${new Date().toLocaleTimeString()}</td>
+                    <td>${latency.toFixed(1)}s</td>
+                    <td>${errorRate}%</td>
+                    <td>${triggerSpike ? 'TRUE' : 'FALSE'}</td>
+                </tr>`;
+                tbody.insertAdjacentHTML('afterbegin', row);
+            } catch (err) {
+                log(`Failed to apply chaos: ${err.message}`, 'error');
             }
         }
 
         async function resetChaos() {
-            log('Resetting all Chaos state to baseline defaults...', 'info');
+            document.getElementById('chaos-latency').value = 0;
+            document.getElementById('lat-val').innerText = '0.0s';
+            document.getElementById('chaos-error').value = 0;
+            document.getElementById('err-val').innerText = '0%';
+
             try {
-                const res = await fetch('/proxy/chaos/reset', { method: 'POST' });
-                await res.json();
-                document.getElementById('chaos-latency').value = 0;
-                document.getElementById('lat-val').innerText = '0.0s';
-                document.getElementById('chaos-error').value = 0;
-                document.getElementById('err-val').innerText = '0%';
-                log('Chaos state and Circuit Breaker reset to baseline.', 'info');
-                fetchHistory();
-                fetchTelemetry();
-            } catch (e) {
-                log(`Reset Chaos Failed: ${e}`, 'error');
+                await fetch('/proxy/chaos/reset', { method: 'POST' });
+                log('Chaos parameters reset to baseline.', 'info');
+            } catch (err) {
+                log(`Reset failed: ${err.message}`, 'error');
             }
         }
 
-        setInterval(fetchTelemetry, 2000);
-        setInterval(fetchHistory, 5000);
+        document.addEventListener('keydown', (e) => {
+            if (e.key.toLowerCase() === 'r' && document.activeElement.tagName !== 'INPUT') {
+                resetChaos();
+            }
+        });
+
         fetchTelemetry();
-        fetchHistory();
+        setInterval(fetchTelemetry, 2000);
     </script>
 </body>
 </html>

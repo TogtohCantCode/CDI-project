@@ -41,10 +41,10 @@ services:
           cpus: "0.50"
           memory: 256M
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/healthz/readiness', timeout=2)"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/healthz/readiness', timeout=8)"]
       interval: 5s
-      timeout: 3s
-      retries: 5
+      timeout: 10s
+      retries: 3
       start_period: 5s
     depends_on:
       redis:
@@ -59,7 +59,7 @@ services:
     build: ./frontend
     restart: unless-stopped
     ports:
-      - "3010:3000"
+      - "3000:3000"
     environment:
       - API_URL=http://api:5000
       - API_TIMEOUT=15
